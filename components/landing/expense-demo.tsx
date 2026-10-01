@@ -8,8 +8,6 @@ import { useExpenseDemo } from "@/lib/hooks/use-expense-demo";
 import { howItWorksItems } from "@/lib/landing-content";
 import { formatMoney } from "@/lib/money";
 
-const people = ["คุณ", "มายด์", "พีท"];
-
 export function ExpenseDemo() {
   const demo = useExpenseDemo();
 
@@ -58,7 +56,7 @@ export function ExpenseDemo() {
                 ทริปตัวอย่าง
               </p>
               <CardTitle className="mt-2 text-2xl font-black tracking-[-0.04em]">
-                หนีไปทะเลกัน
+                {demo.tripName}
               </CardTitle>
             </div>
             <Button
@@ -80,7 +78,9 @@ export function ExpenseDemo() {
                   </span>
                   <div className="min-w-0 flex-1">
                     <p className="truncate text-sm font-bold">{expense.name}</p>
-                    <p className="mt-1 text-xs text-black/40">คุณจ่าย · หารเท่ากัน 3 คน</p>
+                    <p className="mt-1 text-xs text-black/40">
+                      {demo.payerName}จ่าย · หารเท่ากัน {demo.peopleCount} คน
+                    </p>
                   </div>
                   <strong className="font-mono text-sm">฿{formatMoney(expense.cents)}</strong>
                 </div>
@@ -132,9 +132,9 @@ export function ExpenseDemo() {
                 </strong>
               </div>
               <div className="p-6 sm:p-8">
-                <p className="text-xs font-bold text-black/45">หารเท่ากัน 3 คน</p>
+                <p className="text-xs font-bold text-black/45">หารเท่ากัน {demo.peopleCount} คน</p>
                 <div className="mt-4 grid grid-cols-3 gap-3">
-                  {people.map((person, index) => (
+                  {demo.people.map((person, index) => (
                     <div key={person}>
                       <span className="grid size-8 place-items-center rounded-full bg-black text-xs font-bold text-white">
                         {person.slice(0, 1)}

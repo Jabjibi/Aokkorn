@@ -1,17 +1,11 @@
 "use client";
 
 import { useMemo, useState, type FormEvent } from "react";
+import { mockLandingDemo } from "@/lib/mock-data/landing-demo";
 import { parseExpenseInput } from "@/lib/money";
 
-type Expense = { id: number; name: string; cents: number };
-
-const initialExpenses: Expense[] = [
-  { id: 1, name: "อาหารทะเล", cents: 120000 },
-  { id: 2, name: "รถไปสนามบิน", cents: 45000 },
-];
-
 export function useExpenseDemo() {
-  const [expenses, setExpenses] = useState(initialExpenses);
+  const [expenses, setExpenses] = useState(mockLandingDemo.expenses);
   const [draft, setDraft] = useState("");
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
@@ -23,10 +17,12 @@ export function useExpenseDemo() {
 
   const shares = useMemo(
     () =>
-      [0, 1, 2].map((person) =>
+      mockLandingDemo.people.map((_, person) =>
         expenses.reduce(
           (sum, expense) =>
-            sum + Math.floor(expense.cents / 3) + (person < expense.cents % 3 ? 1 : 0),
+            sum +
+            Math.floor(expense.cents / mockLandingDemo.people.length) +
+            (person < expense.cents % mockLandingDemo.people.length ? 1 : 0),
           0,
         ),
       ),
@@ -55,11 +51,25 @@ export function useExpenseDemo() {
   }
 
   function reset() {
-    setExpenses(initialExpenses);
+    setExpenses(mockLandingDemo.expenses);
     setDraft("");
     setError("");
     setNotice("รีเซ็ตตัวอย่างแล้ว");
   }
 
-  return { expenses, draft, setDraft, error, notice, total, shares, addExpense, reset };
+  return {
+    tripName: mockLandingDemo.tripName,
+    payerName: mockLandingDemo.payerName,
+    people: mockLandingDemo.people,
+    peopleCount: mockLandingDemo.people.length,
+    expenses,
+    draft,
+    setDraft,
+    error,
+    notice,
+    total,
+    shares,
+    addExpense,
+    reset,
+  };
 }

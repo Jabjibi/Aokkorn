@@ -1,10 +1,11 @@
 import Image from "next/image";
 
 type WelcomeCardProps = {
+  profileName: string;
   totalLabel: string;
 };
 
-export function WelcomeCard({ totalLabel }: WelcomeCardProps) {
+export function WelcomeCard({ profileName, totalLabel }: WelcomeCardProps) {
   return (
     <section
       className="w-full overflow-hidden rounded-[1.75rem] border border-white/10 bg-black text-white shadow-[0_18px_50px_rgba(0,0,0,0.12)]"
@@ -24,7 +25,7 @@ export function WelcomeCard({ totalLabel }: WelcomeCardProps) {
           id="welcome-title"
           className="relative text-[12px] leading-tight font-black tracking-[-0.035em] whitespace-nowrap sm:text-[clamp(1.25rem,4vw,1.75rem)]"
         >
-          สวัสดี, Pahiso!
+          สวัสดี, {profileName}!
         </h1>
         <p className="relative mt-3 max-w-[65%] text-[12px] leading-4 text-white/65 sm:max-w-[55%] sm:text-sm sm:leading-5">
           จดรายจ่าย แล้วรู้ว่าใครต้องคืนใคร

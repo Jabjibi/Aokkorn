@@ -22,30 +22,3 @@ export type Trip = {
 };
 
 export type TripView = Trip & { totalLabel: string };
-
-export const initialTrips: Trip[] = [
-  {
-    id: 1,
-    name: "ทริปเชียงใหม่",
-    emoji: "🏔️",
-    createdAt: "21 ก.ย. 69",
-    amountMinor: 295000,
-    currency: "THB",
-    expenseCount: 3,
-    peopleCount: 2,
-    status: "active",
-    tone: "lime",
-  },
-  {
-    id: 2,
-    name: "มื้อเย็นวันศุกร์",
-    emoji: "🍜",
-    createdAt: "21 ก.ย. 69",
-    amountMinor: 0,
-    currency: "THB",
-    expenseCount: 0,
-    peopleCount: 1,
-    status: "draft",
-    tone: "blue",
-  },
-];

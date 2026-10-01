@@ -46,3 +46,4 @@ next-env.d.ts
 # specs and common files
 /ref
 /specs
+mock-data

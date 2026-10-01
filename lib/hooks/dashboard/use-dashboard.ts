@@ -11,27 +11,17 @@ import {
   type MouseEvent,
 } from "react";
 import {
-  initialTrips,
   MAX_TRIPS,
   type Currency,
   type Trip,
   type TripView,
 } from "@/lib/hooks/dashboard/dashboard-data";
-
-const currencyDecimals: Record<Currency, number> = { THB: 2, JPY: 0, USD: 2 };
-
-function formatAmount(amountMinor: number, currency: Currency) {
-  const decimals = currencyDecimals[currency];
-
-  return new Intl.NumberFormat("th-TH", {
-    style: "currency",
-    currency,
-    maximumFractionDigits: 0,
-  }).format(amountMinor / 10 ** decimals);
-}
+import { formatAmount } from "@/lib/hooks/dashboard/format-amount";
+import { addTrip, useTrips } from "@/lib/hooks/dashboard/use-trips";
+import { mockProfile } from "@/lib/mock-data/dashboard";
 
 export function useDashboard() {
-  const [trips, setTrips] = useState<Trip[]>(initialTrips);
+  const { trips, ready: tripsReady } = useTrips();
   const [sortNewestFirst, setSortNewestFirst] = useState(true);
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [name, setNameValue] = useState("");
@@ -47,7 +37,7 @@ export function useDashboard() {
   const dialogErrorId = useId();
 
   const tripCount = trips.length;
-  const canCreate = tripCount < MAX_TRIPS;
+  const canCreate = tripsReady && tripCount < MAX_TRIPS;
   const sortLabel = sortNewestFirst ? "อัปเดตล่าสุด" : "เก่าสุดก่อน";
 
   const totalLabel = useMemo(
@@ -142,21 +132,20 @@ export function useDashboard() {
       return;
     }
 
-    setTrips((current) => [
-      ...current,
-      {
-        id: Math.max(0, ...current.map((trip) => trip.id)) + 1,
-        name: normalizedName,
-        emoji: "🧳",
-        createdAt: "วันนี้",
-        amountMinor: 0,
-        currency,
-        expenseCount: 0,
-        peopleCount: 1,
-        status: "draft",
-        tone: "peach",
-      },
-    ]);
+    const trip: Trip = {
+      id: Math.max(0, ...trips.map((current) => current.id)) + 1,
+      name: normalizedName,
+      emoji: "🧳",
+      createdAt: "วันนี้",
+      amountMinor: 0,
+      currency,
+      expenseCount: 0,
+      peopleCount: 1,
+      status: "draft",
+      tone: "peach",
+    };
+
+    addTrip(trip);
     setNotice(`สร้าง “${normalizedName}” แล้ว`);
     closeCreateTrip();
   }
@@ -166,6 +155,7 @@ export function useDashboard() {
   }
 
   return {
+    profile: mockProfile,
     trips: visibleTrips,
     tripCount,
     maxTrips: MAX_TRIPS,

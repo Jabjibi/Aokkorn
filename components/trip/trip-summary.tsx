@@ -1,11 +1,8 @@
-import { Building2, Landmark, Share2, Smartphone, Wallet } from "lucide-react";
-import { CheckboxField } from "@/components/shared/checkbox-field";
+import { Share2, Wallet } from "lucide-react";
+import { ReceivingAccountSection } from "@/components/shared/receiving-account-section";
+import { PercentageBar } from "@/components/shared/percentage-bar";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import type { TripSummaryModel } from "@/lib/hooks/trip/use-trip-summary";
-
-const accountInputClassName =
-  "mt-1 h-10 rounded-xl text-xs focus-visible:border-black/25 focus-visible:ring-0 focus-visible:ring-transparent sm:text-sm";
 
 export function TripSummary({ summary }: { summary: TripSummaryModel }) {
   return (
@@ -77,12 +74,7 @@ export function TripSummary({ summary }: { summary: TripSummaryModel }) {
                     ยอดเดิม {expense.sourceLabel}
                   </p>
                 )}
-                <div className="mt-2 h-2 overflow-hidden rounded-full bg-black/5">
-                  <div
-                    className="h-full rounded-full bg-primary"
-                    style={{ width: expense.progressWidth }}
-                  />
-                </div>
+                <PercentageBar percentage={expense.percentage} />
               </li>
             ))}
           </ol>
@@ -91,122 +83,12 @@ export function TripSummary({ summary }: { summary: TripSummaryModel }) {
         )}
       </section>
 
-      <section
-        aria-labelledby="receiving-account-title"
-        className="rounded-2xl border border-black/10 p-4 sm:p-6"
-      >
-        <h3
-          id="receiving-account-title"
-          className="flex items-center gap-2 text-sm font-bold sm:text-lg"
-        >
-          <Landmark className="size-4 sm:size-5" /> บัญชีรับเงิน
-        </h3>
-        <p className="mt-1 text-xs text-black/50 sm:text-sm">
-          เพิ่มช่องทางรับเงินไว้ใช้เมื่อส่งสรุปให้เพื่อน
-        </p>
-
-        <form onSubmit={summary.account.onSubmit} className="mt-4 space-y-3">
-          <div>
-            <label htmlFor="summary-account-name" className="text-[11px] font-semibold sm:text-xs">
-              ชื่อบัญชี
-            </label>
-            <Input
-              id="summary-account-name"
-              value={summary.account.name}
-              onChange={summary.account.onNameChange}
-              maxLength={100}
-              placeholder="ชื่อบัญชี"
-              className={accountInputClassName}
-            />
-          </div>
-
-          <fieldset>
-            <legend className="mb-1 text-[11px] font-semibold sm:text-xs">ช่องทางรับเงิน</legend>
-            <div className="grid grid-cols-2 gap-2">
-              <Button
-                type="button"
-                variant="outline"
-                aria-pressed={summary.account.method === "promptpay"}
-                onClick={summary.account.onSelectPromptPay}
-                className={`h-9 rounded-xl text-xs sm:text-sm ${summary.account.method === "promptpay" ? "border-black bg-primary text-black" : "border-black/10 bg-white text-black/50"}`}
-              >
-                <Smartphone className="size-4" /> พร้อมเพย์
-              </Button>
-              <Button
-                type="button"
-                variant="outline"
-                aria-pressed={summary.account.method === "bank"}
-                onClick={summary.account.onSelectBank}
-                className={`h-9 rounded-xl text-xs sm:text-sm ${summary.account.method === "bank" ? "border-black bg-primary text-black" : "border-black/10 bg-white text-black/50"}`}
-              >
-                <Building2 className="size-4" /> ธนาคาร
-              </Button>
-            </div>
-          </fieldset>
-
-          {summary.account.method === "bank" && (
-            <div>
-              <label htmlFor="summary-bank-name" className="text-[11px] font-semibold sm:text-xs">
-                ชื่อธนาคาร
-              </label>
-              <Input
-                id="summary-bank-name"
-                value={summary.account.bankName}
-                onChange={summary.account.onBankNameChange}
-                maxLength={100}
-                placeholder="ชื่อธนาคาร"
-                className={accountInputClassName}
-              />
-            </div>
-          )}
-
-          <div>
-            <label
-              htmlFor="summary-account-number"
-              className="text-[11px] font-semibold sm:text-xs"
-            >
-              {summary.account.method === "promptpay" ? "เลขพร้อมเพย์" : "เลขบัญชีธนาคาร"}
-            </label>
-            <Input
-              id="summary-account-number"
-              value={summary.account.number}
-              onChange={summary.account.onNumberChange}
-              inputMode="numeric"
-              maxLength={20}
-              placeholder={
-                summary.account.method === "promptpay"
-                  ? "เบอร์โทรศัพท์หรือเลขบัตรประชาชน"
-                  : "เลขบัญชีธนาคาร"
-              }
-              className={accountInputClassName}
-            />
-          </div>
-
-          <CheckboxField
-            id="summary-account-remember"
-            label="บันทึกไว้สำหรับครั้งต่อไปในเบราว์เซอร์นี้"
-            checked={summary.account.remember}
-            onChange={summary.account.onRememberChange}
-          />
-          <Button
-            type="submit"
-            disabled={!summary.account.valid}
-            className="h-10 w-full rounded-xl bg-black text-xs font-bold text-white hover:bg-black/85 sm:text-sm"
-          >
-            บันทึก
-          </Button>
-          {summary.account.message && (
-            <p role="status" className="text-xs text-black/60 sm:text-sm">
-              {summary.account.message}
-            </p>
-          )}
-        </form>
-      </section>
+      <ReceivingAccountSection account={summary.account} />
 
       <Button
         type="button"
         onClick={summary.onShare}
-        className="h-11 w-full rounded-xl bg-primary text-xs font-bold text-primary-foreground hover:bg-[#b8ed37] sm:text-sm"
+        className="h-11 w-full rounded-xl bg-black text-xs font-bold text-white hover:bg-black/85 sm:text-sm"
       >
         <Share2 className="size-4" /> แชร์สรุปทริป
       </Button>

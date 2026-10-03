@@ -18,8 +18,8 @@ type CurrencyEditor = {
     value: string;
     onChange: (event: ChangeEvent<HTMLInputElement>) => void;
   }[];
-  onOpen: () => void;
   onClose: () => void;
+  onToggle: () => void;
   onSelect: (event: ChangeEvent<HTMLSelectElement>) => void;
   onSubmit: (event: FormEvent<HTMLFormElement>) => void;
 };
@@ -42,7 +42,7 @@ export function TripCurrencyEditor({
           type="button"
           variant="outline"
           size="sm"
-          onClick={editor.open ? editor.onClose : editor.onOpen}
+          onClick={editor.onToggle}
           aria-expanded={editor.open}
           aria-controls="trip-currency-editor"
           className="h-8 gap-1 rounded-full border-black/15 bg-white px-2 text-[11px] font-bold text-black shadow-none hover:border-black/30 hover:bg-white sm:px-3 sm:text-xs"

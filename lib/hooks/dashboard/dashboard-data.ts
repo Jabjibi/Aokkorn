@@ -8,6 +8,8 @@ export const currencyOptions = [
 
 export type Currency = (typeof currencyOptions)[number]["value"];
 
+export type TripParticipant = { id: number; name: string };
+
 export type Trip = {
   id: number;
   name: string;
@@ -17,6 +19,7 @@ export type Trip = {
   currency: Currency;
   expenseCount: number;
   peopleCount: number;
+  participants?: TripParticipant[];
   status: "active" | "draft";
   tone: "lime" | "blue" | "peach";
 };

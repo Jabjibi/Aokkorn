@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useSyncExternalStore } from "react";
-import type { Currency, Trip } from "@/lib/hooks/dashboard/dashboard-data";
+import type { Currency, Trip, TripParticipant } from "@/lib/hooks/dashboard/dashboard-data";
 import { mockTrips } from "@/lib/mock-data/dashboard";
 
 const STORAGE_KEY = "aokkorn-trips-v1";
@@ -43,6 +43,16 @@ function isTrip(value: unknown): value is Trip {
     (trip.currency === "THB" || trip.currency === "JPY" || trip.currency === "USD") &&
     typeof trip.expenseCount === "number" &&
     typeof trip.peopleCount === "number" &&
+    (trip.participants === undefined ||
+      (Array.isArray(trip.participants) &&
+        trip.participants.every(
+          (participant) =>
+            participant !== null &&
+            typeof participant === "object" &&
+            Number.isSafeInteger(participant.id) &&
+            typeof participant.name === "string" &&
+            participant.name.trim().length > 0,
+        ))) &&
     (trip.status === "active" || trip.status === "draft") &&
     (trip.tone === "lime" || trip.tone === "blue" || trip.tone === "peach")
   );
@@ -80,6 +90,36 @@ export function addTrip(trip: Trip) {
   }
 
   window.dispatchEvent(new Event(CHANGE_EVENT));
+}
+
+export function getTripParticipants(trip: Trip | undefined): TripParticipant[] {
+  if (!trip) return [];
+  if (trip.participants) return trip.participants;
+  return Array.from({ length: Math.max(0, trip.peopleCount - 1) }, (_, index) => ({
+    id: index + 1,
+    name: `เพื่อน ${index + 1}`,
+  }));
+}
+
+export function updateTripParticipants(tripId: number, participants: TripParticipant[]) {
+  const trips = parseTrips(getSnapshot());
+  if (!trips.some((trip) => trip.id === tripId)) return false;
+
+  const next = JSON.stringify(
+    trips.map((trip) =>
+      trip.id === tripId ? { ...trip, participants, peopleCount: participants.length + 1 } : trip,
+    ),
+  );
+
+  try {
+    window.localStorage.setItem(STORAGE_KEY, next);
+    memorySnapshot = null;
+  } catch {
+    memorySnapshot = next;
+  }
+
+  window.dispatchEvent(new Event(CHANGE_EVENT));
+  return true;
 }
 
 export function updateTripCurrency(

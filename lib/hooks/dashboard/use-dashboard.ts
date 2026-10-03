@@ -7,6 +7,7 @@ import {
   useMemo,
   useRef,
   useState,
+  type ChangeEvent,
   type FormEvent,
   type MouseEvent,
 } from "react";
@@ -117,6 +118,14 @@ export function useDashboard() {
     setError("");
   }
 
+  function handleNameChange(event: ChangeEvent<HTMLInputElement>) {
+    setName(event.target.value);
+  }
+
+  function handleCurrencyChange(event: ChangeEvent<HTMLSelectElement>) {
+    setCurrency(event.target.value as Currency);
+  }
+
   function submitCreateTrip(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const normalizedName = name.trim();
@@ -141,6 +150,7 @@ export function useDashboard() {
       currency,
       expenseCount: 0,
       peopleCount: 1,
+      participants: [],
       status: "draft",
       tone: "peach",
     };
@@ -177,8 +187,8 @@ export function useDashboard() {
     closeCreateTrip,
     submitCreateTrip,
     handleBackdropMouseDown,
-    setName,
-    setCurrency,
+    onNameChange: handleNameChange,
+    onCurrencyChange: handleCurrencyChange,
     toggleSort: () => setSortNewestFirst((current) => !current),
   };
 }

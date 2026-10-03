@@ -27,6 +27,7 @@ export function TripDetailShell({ tripId }: { tripId: string }) {
     tabs,
     expenseForm,
     currencyEditor,
+    friendForm,
     onAddDay,
     onShareTrip,
     pendingClear,
@@ -104,24 +105,26 @@ export function TripDetailShell({ tripId }: { tripId: string }) {
           <div className="min-w-0 flex-1">
             <SegmentedTabs tabs={tabs} activeId={activeTab} label="เมนูทริป" />
           </div>
-          <Button
-            type="button"
-            variant="ghost"
-            size="sm"
-            onClick={onRequestClear}
-            disabled={detail.expenseCount === 0}
-            aria-label="ล้างรายการค่าใช้จ่ายทั้งหมด"
-            className="h-8 shrink-0 px-1 text-[11px] font-semibold text-black/45 hover:bg-black/[0.025] hover:text-black disabled:opacity-40 sm:text-sm"
-          >
-            ล้าง
-          </Button>
+          {activeTab === "items" && (
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              onClick={onRequestClear}
+              disabled={detail.expenseCount === 0}
+              aria-label="ล้างรายการค่าใช้จ่ายทั้งหมด"
+              className="h-8 shrink-0 px-1 text-[11px] font-semibold text-black/45 hover:bg-black/[0.025] hover:text-black disabled:opacity-40 sm:text-sm"
+            >
+              ล้าง
+            </Button>
+          )}
         </div>
       </header>
 
       <main
         className={`mx-auto w-full max-w-5xl flex-1 px-6 ${activeTab === "summary" ? "pb-8" : "pb-36"}`}
       >
-        {pendingClear && (
+        {activeTab === "items" && pendingClear && (
           <div
             role="group"
             aria-label="ยืนยันการล้างรายการ"
@@ -262,7 +265,9 @@ export function TripDetailShell({ tripId }: { tripId: string }) {
         )}
 
         {activeTab === "summary" && <TripSummary summary={summary} />}
-        {activeTab === "split" && <TripSplit detail={detail} />}
+        {activeTab === "split" && (
+          <TripSplit detail={detail} friendForm={friendForm} summary={summary} />
+        )}
       </main>
 
       {activeTab !== "summary" && (

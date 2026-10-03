@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useSyncExternalStore, type ChangeEvent, type FormEvent } from "react";
+import { useEffect, useState, type ChangeEvent, type FormEvent } from "react";
 import type { Currency } from "@/lib/hooks/dashboard/dashboard-data";
 import { formatAmount, formatAverage } from "@/lib/hooks/dashboard/format-amount";
 import { getConvertedAmountMinor, getSourceCurrency } from "@/lib/hooks/trip/currency-conversion";
@@ -14,66 +14,17 @@ type PaymentAccount = {
   number: string;
 };
 
-const STORAGE_KEY = "aokkorn-payment-account-v1";
-const CHANGE_EVENT = "aokkorn-payment-account-change";
-const SERVER_SNAPSHOT = "__server__";
-let memorySnapshot: string | null | undefined;
-
-function getSnapshot() {
-  if (memorySnapshot !== undefined) return memorySnapshot;
-  try {
-    return window.localStorage.getItem(STORAGE_KEY);
-  } catch {
-    return null;
-  }
-}
-
-function subscribe(listener: () => void) {
-  window.addEventListener("storage", listener);
-  window.addEventListener(CHANGE_EVENT, listener);
-  return () => {
-    window.removeEventListener("storage", listener);
-    window.removeEventListener(CHANGE_EVENT, listener);
-  };
-}
-
-function parseAccount(snapshot: string | null): PaymentAccount | null {
-  if (!snapshot) return null;
-  try {
-    const value: unknown = JSON.parse(snapshot);
-    if (!value || typeof value !== "object") return null;
-    const account = value as Partial<PaymentAccount>;
-    if (
-      typeof account.name !== "string" ||
-      (account.method !== "promptpay" && account.method !== "bank") ||
-      typeof account.bankName !== "string" ||
-      typeof account.number !== "string"
-    ) {
-      return null;
-    }
-    return account as PaymentAccount;
-  } catch {
-    return null;
-  }
-}
-
-function writeAccount(account: PaymentAccount | null) {
-  const snapshot = account ? JSON.stringify(account) : null;
-  try {
-    if (snapshot) window.localStorage.setItem(STORAGE_KEY, snapshot);
-    else window.localStorage.removeItem(STORAGE_KEY);
-    memorySnapshot = undefined;
-    window.dispatchEvent(new Event(CHANGE_EVENT));
-    return true;
-  } catch {
-    memorySnapshot = snapshot;
-    window.dispatchEvent(new Event(CHANGE_EVENT));
-    return false;
-  }
-}
+const LEGACY_STORAGE_KEY = "aokkorn-payment-account-v1";
 
 function accountNumber(value: string) {
   return value.replace(/[\s-]/g, "");
+}
+
+function displayAccountNumber(account: PaymentAccount) {
+  if (account.method === "promptpay" && account.number.length === 10) {
+    return account.number.replace(/^(\d{3})(\d{4})(\d{3})$/, "$1 $2 $3");
+  }
+  return account.number;
 }
 
 export function useTripSummary({
@@ -85,56 +36,51 @@ export function useTripSummary({
   currency: Currency;
   expenses: TripExpense[];
 }) {
-  const snapshot = useSyncExternalStore(subscribe, getSnapshot, () => SERVER_SNAPSHOT);
-  const savedAccount = parseAccount(snapshot === SERVER_SNAPSHOT ? null : snapshot);
-  const [draftName, setDraftName] = useState<string | null>(null);
-  const [draftMethod, setDraftMethod] = useState<PaymentMethod | null>(null);
-  const [draftBankName, setDraftBankName] = useState<string | null>(null);
-  const [draftNumber, setDraftNumber] = useState<string | null>(null);
-  const [draftRemember, setDraftRemember] = useState<boolean | null>(null);
-  const [currentAccount, setCurrentAccount] = useState<PaymentAccount | null>(null);
-  const [accountDirty, setAccountDirty] = useState(false);
+  const [draftName, setDraftName] = useState("");
+  const [draftMethod, setDraftMethod] = useState<PaymentMethod>("promptpay");
+  const [draftBankName, setDraftBankName] = useState("");
+  const [draftNumber, setDraftNumber] = useState("");
+  const [savedAccount, setSavedAccount] = useState<PaymentAccount | null>(null);
+  const [editingAccount, setEditingAccount] = useState(false);
+  const [pendingAccountDelete, setPendingAccountDelete] = useState(false);
   const [accountMessage, setAccountMessage] = useState("");
+  const [copyMessage, setCopyMessage] = useState("");
   const [shareMessage, setShareMessage] = useState("");
 
-  const name = draftName ?? savedAccount?.name ?? "";
-  const method = draftMethod ?? savedAccount?.method ?? "promptpay";
-  const bankName = draftBankName ?? savedAccount?.bankName ?? "";
-  const number = draftNumber ?? savedAccount?.number ?? "";
-  const remember = draftRemember ?? savedAccount !== null;
-  const digits = accountNumber(number);
+  useEffect(() => {
+    try {
+      window.localStorage.removeItem(LEGACY_STORAGE_KEY);
+    } catch {
+      // Browser storage may be unavailable; no account data is read from it.
+    }
+  }, []);
+
+  const digits = accountNumber(draftNumber);
   const validNumber =
-    method === "promptpay" ? /^(?:\d{10}|\d{13})$/.test(digits) : /^\d{8,15}$/.test(digits);
+    draftMethod === "promptpay" ? /^(?:\d{10}|\d{13})$/.test(digits) : /^\d{8,15}$/.test(digits);
   const accountValid =
-    name.trim().length >= 2 && validNumber && (method !== "bank" || bankName.trim().length > 0);
+    draftName.trim().length >= 2 &&
+    validNumber &&
+    (draftMethod !== "bank" || draftBankName.trim().length > 0);
 
   function handleNameChange(event: ChangeEvent<HTMLInputElement>) {
     setDraftName(event.target.value);
-    setAccountDirty(true);
     setAccountMessage("");
   }
 
   function handleNumberChange(event: ChangeEvent<HTMLInputElement>) {
     setDraftNumber(event.target.value);
-    setAccountDirty(true);
     setAccountMessage("");
   }
 
   function handleBankNameChange(event: ChangeEvent<HTMLInputElement>) {
     setDraftBankName(event.target.value);
-    setAccountDirty(true);
     setAccountMessage("");
   }
 
   function selectMethod(nextMethod: PaymentMethod) {
     setDraftMethod(nextMethod);
     setDraftNumber("");
-    setAccountDirty(true);
-    setAccountMessage("");
-  }
-
-  function handleRememberChange(event: ChangeEvent<HTMLInputElement>) {
-    setDraftRemember(event.target.checked);
     setAccountMessage("");
   }
 
@@ -146,20 +92,55 @@ export function useTripSummary({
     }
 
     const account: PaymentAccount = {
-      name: name.trim(),
-      method,
-      bankName: method === "bank" ? bankName.trim() : "",
+      name: draftName.trim(),
+      method: draftMethod,
+      bankName: draftMethod === "bank" ? draftBankName.trim() : "",
       number: digits,
     };
-    const persisted = writeAccount(remember ? account : null);
-    setCurrentAccount(account);
-    setAccountDirty(false);
-    setDraftName(account.name);
-    setDraftBankName(account.bankName);
-    setDraftNumber(account.number);
-    setAccountMessage(
-      remember && persisted ? "บันทึกบัญชีไว้ในเบราว์เซอร์แล้ว" : "บันทึกสำหรับหน้านี้แล้ว",
-    );
+    setSavedAccount(account);
+    setEditingAccount(false);
+    setPendingAccountDelete(false);
+    setAccountMessage("");
+    setCopyMessage("");
+  }
+
+  function editAccount() {
+    if (!savedAccount) return;
+    setDraftName(savedAccount.name);
+    setDraftMethod(savedAccount.method);
+    setDraftBankName(savedAccount.bankName);
+    setDraftNumber(savedAccount.number);
+    setEditingAccount(true);
+    setPendingAccountDelete(false);
+    setAccountMessage("");
+    setCopyMessage("");
+  }
+
+  function cancelEditAccount() {
+    setEditingAccount(false);
+    setAccountMessage("");
+    setCopyMessage("");
+  }
+
+  function confirmDeleteAccount() {
+    setSavedAccount(null);
+    setDraftName("");
+    setDraftMethod("promptpay");
+    setDraftBankName("");
+    setDraftNumber("");
+    setPendingAccountDelete(false);
+    setCopyMessage("");
+    setAccountMessage("ลบบัญชีรับเงินแล้ว");
+  }
+
+  async function copyAccountNumber() {
+    if (!savedAccount) return;
+    try {
+      await navigator.clipboard.writeText(savedAccount.number);
+      setCopyMessage("คัดลอกเลขบัญชีแล้ว");
+    } catch {
+      setCopyMessage("คัดลอกไม่สำเร็จ ลองใหม่อีกครั้ง");
+    }
   }
 
   const sortedExpenses = [...expenses].sort(
@@ -179,12 +160,11 @@ export function useTripSummary({
       sourceLabel:
         sourceCurrency === currency ? null : formatAmount(expense.amountMinor, sourceCurrency),
       percentageLabel: `${percentage}%`,
-      progressWidth: `${Math.max(percentage, 2)}%`,
+      percentage,
     };
   });
 
   async function handleShareSummary() {
-    const accountForShare = accountDirty ? null : (currentAccount ?? savedAccount);
     const lines = [
       `สรุปทริป ${tripName}`,
       `ยอดรวม ${totalLabel}`,
@@ -194,10 +174,10 @@ export function useTripSummary({
           `${index + 1}. ${expense.name} ${expense.amountLabel}${expense.sourceLabel ? ` (จาก ${expense.sourceLabel})` : ""}`,
       ),
     ];
-    if (accountForShare) {
-      lines.push(`บัญชีรับเงิน ${accountForShare.name}`);
+    if (savedAccount) {
+      lines.push(`บัญชีรับเงิน ${savedAccount.name}`);
       lines.push(
-        `${accountForShare.method === "promptpay" ? "พร้อมเพย์" : accountForShare.bankName} ${accountForShare.number}`,
+        `${savedAccount.method === "promptpay" ? "พร้อมเพย์" : savedAccount.bankName} ${savedAccount.number}`,
       );
     }
     const text = lines.join("\n");
@@ -223,20 +203,36 @@ export function useTripSummary({
     highestName: highest?.name ?? "ยังไม่มีรายการ",
     breakdown,
     account: {
-      name,
-      method,
-      bankName,
-      number,
-      remember,
+      name: draftName,
+      method: draftMethod,
+      bankName: draftBankName,
+      number: draftNumber,
       valid: accountValid,
       message: accountMessage,
+      formOpen: savedAccount === null || editingAccount,
+      isEditing: editingAccount,
+      saved: savedAccount
+        ? {
+            name: savedAccount.name,
+            methodLabel: savedAccount.method === "promptpay" ? "พร้อมเพย์" : savedAccount.bankName,
+            method: savedAccount.method,
+            displayNumber: displayAccountNumber(savedAccount),
+          }
+        : null,
+      pendingDelete: pendingAccountDelete,
+      copyMessage,
       onNameChange: handleNameChange,
       onNumberChange: handleNumberChange,
       onBankNameChange: handleBankNameChange,
       onSelectPromptPay: () => selectMethod("promptpay"),
       onSelectBank: () => selectMethod("bank"),
-      onRememberChange: handleRememberChange,
       onSubmit: handleSaveAccount,
+      onEdit: editAccount,
+      onCancelEdit: cancelEditAccount,
+      onRequestDelete: () => setPendingAccountDelete(true),
+      onCancelDelete: () => setPendingAccountDelete(false),
+      onConfirmDelete: confirmDeleteAccount,
+      onCopy: copyAccountNumber,
     },
     onShare: handleShareSummary,
     shareMessage,

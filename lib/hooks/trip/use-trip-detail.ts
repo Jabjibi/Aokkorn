@@ -8,7 +8,13 @@ import {
   formatNumber,
   formatShare,
 } from "@/lib/hooks/dashboard/format-amount";
-import { updateTripCurrency, updateTripStats, useTrips } from "@/lib/hooks/dashboard/use-trips";
+import {
+  getTripParticipants,
+  updateTripCurrency,
+  updateTripParticipants,
+  updateTripStats,
+  useTrips,
+} from "@/lib/hooks/dashboard/use-trips";
 import {
   convertLedgerCurrency,
   getConvertedAmountMinor,
@@ -76,8 +82,12 @@ export function useTripDetail(tripId: string) {
   const [selectedCurrency, setSelectedCurrency] = useState<Currency | null>(null);
   const [currencyError, setCurrencyError] = useState("");
   const [currencyRates, setCurrencyRates] = useState<Partial<Record<Currency, string>>>({});
+  const [friendFormOpen, setFriendFormOpen] = useState(false);
+  const [friendName, setFriendName] = useState("");
+  const [friendError, setFriendError] = useState("");
 
   const trip = trips.find((candidate) => candidate.id === numericTripId);
+  const participants = getTripParticipants(trip);
   const selectedBase = selectedCurrency ?? trip?.currency ?? "THB";
   const requiredRates =
     trip && selectedBase !== trip.currency
@@ -212,6 +222,68 @@ export function useTripDetail(tripId: string) {
     setPendingClear(true);
   }
 
+  function selectTab(tab: TripTab) {
+    setPendingClear(false);
+    setActiveTab(tab);
+  }
+
+  function openFriendForm() {
+    setFriendName("");
+    setFriendError("");
+    setFriendFormOpen(true);
+  }
+
+  function closeFriendForm() {
+    setFriendFormOpen(false);
+    setFriendError("");
+  }
+
+  function handleFriendNameChange(event: ChangeEvent<HTMLInputElement>) {
+    setFriendName(event.target.value);
+    setFriendError("");
+  }
+
+  function handleAddFriend(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (!trip) return;
+    const name = friendName.trim();
+    if (!name) {
+      setFriendError("ใส่ชื่อเพื่อนก่อนเพิ่ม");
+      return;
+    }
+    if (
+      participants.some(
+        (participant) => participant.name.toLocaleLowerCase() === name.toLocaleLowerCase(),
+      )
+    ) {
+      setFriendError("ชื่อนี้อยู่ในทริปแล้ว");
+      return;
+    }
+
+    const next = [
+      ...participants,
+      { id: Math.max(0, ...participants.map((participant) => participant.id)) + 1, name },
+    ];
+    if (updateTripParticipants(trip.id, next)) {
+      setNotice(`เพิ่ม ${name} เข้าทริปแล้ว`);
+      closeFriendForm();
+    }
+  }
+
+  function handleRemoveFriend(participantId: number) {
+    if (!trip) return;
+    const removed = participants.find((participant) => participant.id === participantId);
+    if (!removed) return;
+    if (
+      updateTripParticipants(
+        trip.id,
+        participants.filter((participant) => participant.id !== participantId),
+      )
+    ) {
+      setNotice(`นำ ${removed.name} ออกจากทริปแล้ว`);
+    }
+  }
+
   function confirmClearExpenses() {
     if (!trip) return;
 
@@ -244,7 +316,7 @@ export function useTripDetail(tripId: string) {
   const expenses = ledger.expenses;
   const totalMinor = expenses.reduce((sum, expense) => sum + getConvertedAmountMinor(expense), 0);
   const averageMinor = expenses.length ? totalMinor / expenses.length : 0;
-  const peopleCount = Math.max(1, trip?.peopleCount ?? 1);
+  const peopleCount = participants.length + 1;
   const summary = useTripSummary({
     tripName: trip?.name ?? "",
     currency: trip?.currency ?? "THB",
@@ -262,10 +334,10 @@ export function useTripDetail(tripId: string) {
         totalLabel: formatAmount(totalMinor, trip.currency),
         averageLabel: formatAverage(averageMinor, trip.currency),
         perPersonLabel: formatShare(totalMinor / peopleCount, trip.currency),
-        splitExpenses: expenses.map((expense) => ({
-          id: expense.id,
-          name: expense.name,
-          shareLabel: formatShare(getConvertedAmountMinor(expense) / peopleCount, trip.currency),
+        splitSharePercent: peopleCount > 1 ? 100 / peopleCount : 0,
+        participants: participants.map((participant) => ({
+          ...participant,
+          onRemove: () => handleRemoveFriend(participant.id),
         })),
         days: Array.from({ length: ledger.dayCount }, (_, index) => {
           const dayNumber = index + 1;
@@ -306,9 +378,9 @@ export function useTripDetail(tripId: string) {
     summary,
     activeTab,
     tabs: [
-      { id: "items", label: "รายการ", onSelect: () => setActiveTab("items") },
-      { id: "summary", label: "สรุป", onSelect: () => setActiveTab("summary") },
-      { id: "split", label: "หาร", onSelect: () => setActiveTab("split") },
+      { id: "items", label: "รายการ", onSelect: () => selectTab("items") },
+      { id: "summary", label: "สรุป", onSelect: () => selectTab("summary") },
+      { id: "split", label: "หาร", onSelect: () => selectTab("split") },
     ] satisfies { id: TripTab; label: string; onSelect: () => void }[],
     expenseForm: {
       name: expenseName,
@@ -336,14 +408,23 @@ export function useTripDetail(tripId: string) {
         previewTotalMinor === undefined ? null : formatAmount(previewTotalMinor, selectedBase),
       canSave: selectedCurrency !== null && previewLedger !== null,
       error: currencyError,
-      onOpen: openCurrencyEditor,
       onClose: closeCurrencyEditor,
+      onToggle: currencyEditorOpen ? closeCurrencyEditor : openCurrencyEditor,
       onSelect: (event: ChangeEvent<HTMLSelectElement>) => {
         setSelectedCurrency(event.target.value as Currency);
         setCurrencyRates({});
         setCurrencyError("");
       },
       onSubmit: saveCurrency,
+    },
+    friendForm: {
+      open: friendFormOpen,
+      name: friendName,
+      error: friendError,
+      onOpen: openFriendForm,
+      onClose: closeFriendForm,
+      onNameChange: handleFriendNameChange,
+      onSubmit: handleAddFriend,
     },
     onAddDay: handleAddDay,
     onShareTrip: handleShareTrip,

@@ -53,8 +53,8 @@ export function DashboardShell() {
           titleId={dashboard.dialogTitleId}
           descriptionId={dashboard.dialogDescriptionId}
           errorId={dashboard.dialogErrorId}
-          onNameChange={dashboard.setName}
-          onCurrencyChange={dashboard.setCurrency}
+          onNameChange={dashboard.onNameChange}
+          onCurrencyChange={dashboard.onCurrencyChange}
           onClose={dashboard.closeCreateTrip}
           onSubmit={dashboard.submitCreateTrip}
           onBackdropMouseDown={dashboard.handleBackdropMouseDown}

@@ -1,4 +1,4 @@
-import type { FormEvent, MouseEvent, RefObject } from "react";
+import type { ChangeEventHandler, FormEvent, MouseEvent, RefObject } from "react";
 import { MapPin, Plus } from "lucide-react";
 import { currencyOptions, type Currency } from "@/lib/hooks/dashboard/dashboard-data";
 import { AppDialog } from "@/components/shared/app-dialog";
@@ -17,8 +17,8 @@ type CreateTripDialogProps = {
   titleId: string;
   descriptionId: string;
   errorId: string;
-  onNameChange: (value: string) => void;
-  onCurrencyChange: (value: Currency) => void;
+  onNameChange: ChangeEventHandler<HTMLInputElement>;
+  onCurrencyChange: ChangeEventHandler<HTMLSelectElement>;
   onClose: () => void;
   onSubmit: (event: FormEvent<HTMLFormElement>) => void;
   onBackdropMouseDown: (event: MouseEvent<HTMLDivElement>) => void;
@@ -60,7 +60,7 @@ export function CreateTripDialog({
           ref={inputRef}
           id="trip-name"
           value={name}
-          onChange={(event) => onNameChange(event.target.value)}
+          onChange={onNameChange}
           placeholder="เช่น เชียงใหม่หน้าหนาว"
           maxLength={80}
           aria-invalid={Boolean(error)}
@@ -75,7 +75,7 @@ export function CreateTripDialog({
           id="trip-currency"
           className="mt-2"
           value={currency}
-          onChange={(event) => onCurrencyChange(event.target.value as Currency)}
+          onChange={onCurrencyChange}
           options={currencyOptions}
         />
 

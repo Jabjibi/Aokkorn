@@ -102,3 +102,55 @@ button {
     animation-iteration-count: 1 !important;
   }
 }
+
+.landing-page {
+  --landing-blue: #0038ff;
+  --landing-lime: #ccff00;
+  background: var(--landing-blue);
+  color: white;
+  overflow-x: clip;
+}
+
+.landing-page ::selection {
+  background: var(--landing-lime);
+  color: #090909;
+}
+
+.landing-grid {
+  background-image:
+    linear-gradient(to right, #ffffff12 1px, transparent 1px),
+    linear-gradient(to bottom, #ffffff12 1px, transparent 1px);
+  background-size: 64px 64px;
+}
+
+.landing-headline {
+  font-size: clamp(3.5rem, 10vw, 7.25rem);
+  font-weight: 900;
+  line-height: 1.2;
+  letter-spacing: -0.045em;
+  text-shadow:
+    1px 1px #0024aa,
+    2px 2px #0024aa,
+    3px 3px #0024aa,
+    4px 4px #0024aa,
+    5px 5px #0024aa,
+    6px 6px #0024aa,
+    7px 7px #0024aa;
+}
+
+@media (min-width: 1024px) {
+  .landing-headline {
+    font-size: clamp(5.5rem, 8.3vw, 7.25rem);
+    text-shadow:
+      1px 1px #0024aa,
+      2px 2px #0024aa,
+      3px 3px #0024aa,
+      4px 4px #0024aa,
+      5px 5px #0024aa,
+      6px 6px #0024aa,
+      7px 7px #0024aa,
+      8px 8px #0024aa,
+      9px 9px #0024aa,
+      10px 10px #0024aa;
+  }
+}

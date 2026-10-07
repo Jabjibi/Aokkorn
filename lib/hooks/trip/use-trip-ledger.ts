@@ -2,6 +2,7 @@
 
 import { useCallback, useMemo, useSyncExternalStore } from "react";
 import type { Currency } from "@/lib/hooks/dashboard/dashboard-data";
+import { isCurrency } from "@/lib/hooks/dashboard/currency-data";
 import { convertLedgerCurrency, parseExchangeRate } from "@/lib/hooks/trip/currency-conversion";
 import type { TripExpense, TripLedger } from "@/lib/hooks/trip/trip-types";
 import { mockTripExpenses } from "@/lib/mock-data/trip";
@@ -59,10 +60,7 @@ function isExpense(value: unknown, tripId: number, dayCount: number): value is T
     Number.isSafeInteger(expense.amountMinor) &&
     typeof expense.amountMinor === "number" &&
     expense.amountMinor > 0 &&
-    (expense.currency === undefined ||
-      expense.currency === "THB" ||
-      expense.currency === "JPY" ||
-      expense.currency === "USD") &&
+    (expense.currency === undefined || isCurrency(expense.currency)) &&
     (expense.convertedAmountMinor === undefined ||
       (Number.isSafeInteger(expense.convertedAmountMinor) && expense.convertedAmountMinor >= 0)) &&
     (expense.conversionHistory === undefined ||
@@ -71,12 +69,8 @@ function isExpense(value: unknown, tripId: number, dayCount: number): value is T
           (conversion) =>
             conversion !== null &&
             typeof conversion === "object" &&
-            (conversion.fromCurrency === "THB" ||
-              conversion.fromCurrency === "JPY" ||
-              conversion.fromCurrency === "USD") &&
-            (conversion.toCurrency === "THB" ||
-              conversion.toCurrency === "JPY" ||
-              conversion.toCurrency === "USD") &&
+            isCurrency(conversion.fromCurrency) &&
+            isCurrency(conversion.toCurrency) &&
             typeof conversion.rate === "string" &&
             parseExchangeRate(conversion.rate) !== null &&
             conversion.source === "manual" &&

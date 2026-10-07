@@ -33,7 +33,7 @@ export function WelcomeCard({ profileName, totalLabel }: WelcomeCardProps) {
       </div>
 
       <div className="px-6 pb-4 sm:px-7 sm:pb-5">
-        <div className="border-t border-[#a3a3a3] pt-3">
+        <div id="summary" className="scroll-mt-28 border-t border-[#a3a3a3] pt-3">
           <p className="text-[12px] font-semibold text-white/50 sm:text-xs">
             ยอดค่าใช้จ่ายรวม (THB)
           </p>

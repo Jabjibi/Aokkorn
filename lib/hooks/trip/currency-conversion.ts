@@ -1,7 +1,7 @@
 import type { Currency } from "@/lib/hooks/dashboard/dashboard-data";
+import { getCurrencyDigits } from "@/lib/hooks/dashboard/currency-data";
 import type { TripExpense, TripLedger } from "@/lib/hooks/trip/trip-types";
 
-const decimals: Record<Currency, number> = { THB: 2, JPY: 0, USD: 2 };
 const MAX_MINOR = BigInt(Number.MAX_SAFE_INTEGER);
 
 export function getSourceCurrency(expense: TripExpense, baseCurrency: Currency) {
@@ -38,8 +38,9 @@ export function convertAmountMinor(
   const parsed = parseExchangeRate(rate);
   if (!parsed) return null;
 
-  const numerator = BigInt(amountMinor) * parsed.numerator * BigInt(10) ** BigInt(decimals[to]);
-  const denominator = parsed.scale * BigInt(10) ** BigInt(decimals[from]);
+  const numerator =
+    BigInt(amountMinor) * parsed.numerator * BigInt(10) ** BigInt(getCurrencyDigits(to));
+  const denominator = parsed.scale * BigInt(10) ** BigInt(getCurrencyDigits(from));
   const rounded = (numerator + denominator / BigInt(2)) / denominator;
   return rounded <= MAX_MINOR ? Number(rounded) : null;
 }

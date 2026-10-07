@@ -10,6 +10,27 @@ export const heroTrustPoints = [
   "เห็นยอดชัดทุกคน",
 ] as const;
 
+export const heroTripCards = [
+  {
+    image:
+      "https://images.unsplash.com/photo-1519046904884-53103b34b206?auto=format&fit=crop&w=600&q=80",
+    imageAlt: "ชายหาดและทะเลสำหรับทริปกับเพื่อน",
+    title: "หนีไปทะเลกัน",
+    subtitle: "คุณ มายด์ และพีท · 3 คน",
+    amount: "฿1,650.00",
+    amountLabel: "ยอดรวมทริป",
+  },
+  {
+    image:
+      "https://images.unsplash.com/photo-1476514525535-07fb3b4ae5f1?auto=format&fit=crop&w=600&q=80",
+    imageAlt: "ทะเลสาบล้อมรอบด้วยภูเขาสำหรับวันพักผ่อน",
+    title: "หารแล้ว พร้อมเที่ยว!",
+    subtitle: "ทริปหนีไปทะเลกัน · 3 คน",
+    amount: "฿550.00",
+    amountLabel: "ส่วนแบ่งต่อคน",
+  },
+] as const;
+
 export const featureItems = [
   {
     number: "01",

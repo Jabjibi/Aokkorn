@@ -1,41 +1,45 @@
 import type { Currency } from "@/lib/hooks/dashboard/dashboard-data";
-
-const currencyDecimals: Record<Currency, number> = { THB: 2, JPY: 0, USD: 2 };
+import { getCurrencyDigits } from "@/lib/hooks/dashboard/currency-data";
 
 export function formatAmount(amountMinor: number, currency: Currency) {
-  const fractionDigits = currency !== "JPY" && amountMinor % 100 !== 0 ? 2 : 0;
+  const digits = getCurrencyDigits(currency);
+  const scale = 10 ** digits;
+  const fractionDigits = amountMinor % scale !== 0 ? digits : 0;
   return new Intl.NumberFormat("th-TH", {
     style: "currency",
     currency,
     minimumFractionDigits: fractionDigits,
     maximumFractionDigits: fractionDigits,
-  }).format(amountMinor / 10 ** currencyDecimals[currency]);
+  }).format(amountMinor / scale);
 }
 
 export function formatNumber(amountMinor: number, currency: Currency) {
-  const fractionDigits = currency !== "JPY" && amountMinor % 100 !== 0 ? 2 : 0;
+  const digits = getCurrencyDigits(currency);
+  const scale = 10 ** digits;
+  const fractionDigits = amountMinor % scale !== 0 ? digits : 0;
   return new Intl.NumberFormat("th-TH", {
     minimumFractionDigits: fractionDigits,
     maximumFractionDigits: fractionDigits,
-  }).format(amountMinor / 10 ** currencyDecimals[currency]);
+  }).format(amountMinor / scale);
 }
 
 export function formatAverage(amountMinor: number, currency: Currency) {
-  const fractionDigits = currency === "JPY" ? 0 : 2;
+  const fractionDigits = getCurrencyDigits(currency);
 
   return new Intl.NumberFormat("th-TH", {
     style: "currency",
     currency,
     minimumFractionDigits: fractionDigits,
     maximumFractionDigits: fractionDigits,
-  }).format(amountMinor / 10 ** currencyDecimals[currency]);
+  }).format(amountMinor / 10 ** fractionDigits);
 }
 
 export function formatShare(amountMinor: number, currency: Currency) {
+  const digits = getCurrencyDigits(currency);
   return new Intl.NumberFormat("th-TH", {
     style: "currency",
     currency,
     minimumFractionDigits: 0,
-    maximumFractionDigits: currency === "JPY" ? 0 : 2,
-  }).format(amountMinor / 10 ** currencyDecimals[currency]);
+    maximumFractionDigits: digits,
+  }).format(amountMinor / 10 ** digits);
 }

@@ -1,8 +1,8 @@
 "use client";
 
-import { useMemo, useState, type FormEvent } from "react";
+import { useMemo, useState, type ChangeEvent, type FormEvent } from "react";
 import { mockLandingDemo } from "@/lib/mock-data/landing-demo";
-import { parseExpenseInput } from "@/lib/money";
+import { formatMoney, parseExpenseInput } from "@/lib/money";
 
 export function useExpenseDemo() {
   const [expenses, setExpenses] = useState(mockLandingDemo.expenses);
@@ -57,19 +57,29 @@ export function useExpenseDemo() {
     setNotice("รีเซ็ตตัวอย่างแล้ว");
   }
 
+  function changeDraft(event: ChangeEvent<HTMLInputElement>) {
+    setDraft(event.target.value);
+    setError("");
+  }
+
   return {
     tripName: mockLandingDemo.tripName,
     payerName: mockLandingDemo.payerName,
-    people: mockLandingDemo.people,
+    people: mockLandingDemo.people.map((name, index) => ({
+      name,
+      initial: name.slice(0, 1),
+      share: formatMoney(shares[index]),
+    })),
     peopleCount: mockLandingDemo.people.length,
-    expenses,
+    expenses: expenses.map((expense) => ({ ...expense, amount: formatMoney(expense.cents) })),
     draft,
-    setDraft,
+    changeDraft,
     error,
     notice,
-    total,
-    shares,
+    total: formatMoney(total),
     addExpense,
     reset,
   };
 }
+
+export type ExpenseDemoModel = ReturnType<typeof useExpenseDemo>;

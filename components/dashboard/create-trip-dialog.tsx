@@ -1,6 +1,6 @@
 import type { ChangeEventHandler, FormEvent, MouseEvent, RefObject } from "react";
 import { MapPin, Plus } from "lucide-react";
-import { currencyOptions, type Currency } from "@/lib/hooks/dashboard/dashboard-data";
+import type { Currency } from "@/lib/hooks/dashboard/dashboard-data";
 import { AppDialog } from "@/components/shared/app-dialog";
 import { FormSelect } from "@/components/shared/form-select";
 import { Button } from "@/components/ui/button";
@@ -9,6 +9,7 @@ import { Input } from "@/components/ui/input";
 type CreateTripDialogProps = {
   name: string;
   currency: Currency;
+  currencyOptions: readonly { value: Currency; label: string }[];
   error: string;
   tripCount: number;
   maxTrips: number;
@@ -27,6 +28,7 @@ type CreateTripDialogProps = {
 export function CreateTripDialog({
   name,
   currency,
+  currencyOptions,
   error,
   tripCount,
   maxTrips,

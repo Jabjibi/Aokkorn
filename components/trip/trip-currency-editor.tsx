@@ -3,12 +3,13 @@ import { ChevronRight } from "lucide-react";
 import { FormSelect } from "@/components/shared/form-select";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { currencyOptions, type Currency } from "@/lib/hooks/dashboard/dashboard-data";
+import type { Currency } from "@/lib/hooks/dashboard/dashboard-data";
 
 type CurrencyEditor = {
   open: boolean;
   current: Currency;
   selected: Currency;
+  options: readonly { value: Currency; label: string }[];
   canSave: boolean;
   previewLabel: string | null;
   error: string;
@@ -65,7 +66,7 @@ export function TripCurrencyEditor({
             className="mt-2"
             value={editor.selected}
             onChange={editor.onSelect}
-            options={currencyOptions}
+            options={editor.options}
           />
           {editor.rateFields.length > 0 && (
             <div className="mt-4 space-y-3">

@@ -13,6 +13,7 @@ import {
 } from "react";
 import {
   MAX_TRIPS,
+  currencyOptions,
   type Currency,
   type Trip,
   type TripView,
@@ -144,7 +145,6 @@ export function useDashboard() {
     const trip: Trip = {
       id: Math.max(0, ...trips.map((current) => current.id)) + 1,
       name: normalizedName,
-      emoji: "🧳",
       createdAt: "วันนี้",
       amountMinor: 0,
       currency,
@@ -152,7 +152,6 @@ export function useDashboard() {
       peopleCount: 1,
       participants: [],
       status: "draft",
-      tone: "peach",
     };
 
     addTrip(trip);
@@ -175,6 +174,7 @@ export function useDashboard() {
     isCreateOpen,
     name,
     currency,
+    currencyOptions,
     error,
     notice,
     inputRef,

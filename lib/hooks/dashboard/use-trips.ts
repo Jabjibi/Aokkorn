@@ -2,6 +2,7 @@
 
 import { useMemo, useSyncExternalStore } from "react";
 import type { Currency, Trip, TripParticipant } from "@/lib/hooks/dashboard/dashboard-data";
+import { isCurrency } from "@/lib/hooks/dashboard/currency-data";
 import { mockTrips } from "@/lib/mock-data/dashboard";
 
 const STORAGE_KEY = "aokkorn-trips-v1";
@@ -37,10 +38,9 @@ function isTrip(value: unknown): value is Trip {
   return (
     Number.isInteger(trip.id) &&
     typeof trip.name === "string" &&
-    typeof trip.emoji === "string" &&
     typeof trip.createdAt === "string" &&
     typeof trip.amountMinor === "number" &&
-    (trip.currency === "THB" || trip.currency === "JPY" || trip.currency === "USD") &&
+    isCurrency(trip.currency) &&
     typeof trip.expenseCount === "number" &&
     typeof trip.peopleCount === "number" &&
     (trip.participants === undefined ||
@@ -53,8 +53,7 @@ function isTrip(value: unknown): value is Trip {
             typeof participant.name === "string" &&
             participant.name.trim().length > 0,
         ))) &&
-    (trip.status === "active" || trip.status === "draft") &&
-    (trip.tone === "lime" || trip.tone === "blue" || trip.tone === "peach")
+    (trip.status === "active" || trip.status === "draft")
   );
 }
 

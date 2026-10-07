@@ -5,7 +5,6 @@ import { DashboardHeader } from "@/components/dashboard/dashboard-header";
 import { GettingStartedCard } from "@/components/dashboard/getting-started-card";
 import { useDashboard } from "@/lib/hooks/dashboard/use-dashboard";
 import { MobileNavigation } from "@/components/dashboard/mobile-navigation";
-import { SummarySection } from "@/components/dashboard/summary-section";
 import { TripsSection } from "@/components/dashboard/trips-section";
 import { WelcomeCard } from "@/components/dashboard/welcome-card";
 
@@ -36,7 +35,6 @@ export function DashboardShell() {
           canCreate={dashboard.canCreate}
           createButtonRef={dashboard.createButtonRef}
         />
-        <SummarySection />
       </main>
 
       <MobileNavigation onCreateTrip={dashboard.openCreateTrip} canCreate={dashboard.canCreate} />
@@ -45,6 +43,7 @@ export function DashboardShell() {
         <CreateTripDialog
           name={dashboard.name}
           currency={dashboard.currency}
+          currencyOptions={dashboard.currencyOptions}
           error={dashboard.error}
           tripCount={dashboard.tripCount}
           maxTrips={dashboard.maxTrips}

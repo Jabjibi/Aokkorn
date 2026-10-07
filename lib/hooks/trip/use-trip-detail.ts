@@ -1,7 +1,8 @@
 "use client";
 
 import { useState, type ChangeEvent, type FormEvent } from "react";
-import type { Currency } from "@/lib/hooks/dashboard/dashboard-data";
+import { currencyOptions, type Currency } from "@/lib/hooks/dashboard/dashboard-data";
+import { getCurrencyDigits, getCurrencyLabel } from "@/lib/hooks/dashboard/currency-data";
 import {
   formatAmount,
   formatAverage,
@@ -26,22 +27,16 @@ import { useTripLedger } from "@/lib/hooks/trip/use-trip-ledger";
 import { useTripSummary } from "@/lib/hooks/trip/use-trip-summary";
 import type { TripExpense, TripLedger } from "@/lib/hooks/trip/trip-types";
 
-const currencyLabels: Record<Currency, string> = {
-  THB: "บาทไทย (THB)",
-  JPY: "เยนญี่ปุ่น (JPY)",
-  USD: "ดอลลาร์สหรัฐ (USD)",
-};
-
 export type TripTab = "items" | "summary" | "split";
 
 function parseAmountMinor(value: string, currency: Currency) {
   const input = value.trim();
-  const fractionDigits = currency === "JPY" ? 0 : 2;
+  const fractionDigits = getCurrencyDigits(currency);
   const whole = "(?:\\d+|\\d{1,3}(?:,\\d{3})+)";
   const valid =
     fractionDigits === 0
       ? new RegExp(`^${whole}$`).test(input)
-      : new RegExp(`^${whole}(?:\\.\\d{1,2})?$`).test(input);
+      : new RegExp(`^${whole}(?:\\.\\d{1,${fractionDigits}})?$`).test(input);
   if (!valid) return null;
 
   const [wholeAmount, fraction = ""] = input.replace(/,/g, "").split(".");
@@ -136,7 +131,7 @@ export function useTripDetail(tripId: string) {
     }
     const total = next.expenses.reduce((sum, expense) => sum + getConvertedAmountMinor(expense), 0);
     updateTripCurrency(trip.id, selectedCurrency, total, next.expenses.length);
-    setNotice(`เปลี่ยนสกุลเงินหลักเป็น ${currencyLabels[selectedCurrency]} แล้ว`);
+    setNotice(`เปลี่ยนสกุลเงินหลักเป็น ${getCurrencyLabel(selectedCurrency)} แล้ว`);
     closeCurrencyEditor();
   }
 
@@ -176,9 +171,9 @@ export function useTripDetail(tripId: string) {
     const amountMinor = parseAmountMinor(expenseAmount, trip.currency);
     if (amountMinor === null) {
       setFormError(
-        trip.currency === "JPY"
+        getCurrencyDigits(trip.currency) === 0
           ? "ใส่จำนวนเงินเต็มที่มากกว่า 0"
-          : "ใส่จำนวนเงินที่มากกว่า 0 เช่น 200 หรือ 200.50",
+          : `ใส่จำนวนเงินที่มากกว่า 0 และทศนิยมไม่เกิน ${getCurrencyDigits(trip.currency)} ตำแหน่ง`,
       );
       return;
     }
@@ -328,7 +323,7 @@ export function useTripDetail(tripId: string) {
         name: trip.name,
         createdAt: trip.createdAt,
         currency: trip.currency,
-        currencyLabel: currencyLabels[trip.currency],
+        currencyLabel: getCurrencyLabel(trip.currency),
         expenseCount: expenses.length,
         peopleCount,
         totalLabel: formatAmount(totalMinor, trip.currency),
@@ -395,6 +390,7 @@ export function useTripDetail(tripId: string) {
       open: currencyEditorOpen,
       current: trip?.currency ?? "THB",
       selected: selectedBase,
+      options: currencyOptions,
       rateFields: requiredRates.map((source) => ({
         source,
         target: selectedBase,

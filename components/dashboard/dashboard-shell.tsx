@@ -13,14 +13,10 @@ export function DashboardShell() {
 
   return (
     <div className="dashboard-mobile-font min-h-dvh bg-[#f7f7f3] text-[#11120f]">
-      <DashboardHeader
-        profile={dashboard.profile}
-        onCreateTrip={dashboard.openCreateTrip}
-        canCreate={dashboard.canCreate}
-      />
+      <DashboardHeader onCreateTrip={dashboard.openCreateTrip} canCreate={dashboard.canCreate} />
 
       <main className="mx-auto w-full max-w-7xl px-4 pt-4 pb-32 sm:px-6 sm:pt-6 lg:px-8 lg:pt-9 lg:pb-14">
-        <WelcomeCard profileName={dashboard.profile.name} totalLabel={dashboard.totalLabel} />
+        <WelcomeCard totalLabel={dashboard.totalLabel} />
         <GettingStartedCard
           onCreateTrip={dashboard.openCreateTrip}
           canCreate={dashboard.canCreate}

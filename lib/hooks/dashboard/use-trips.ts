@@ -3,9 +3,10 @@
 import { useMemo, useSyncExternalStore } from "react";
 import type { Currency, Trip, TripParticipant } from "@/lib/hooks/dashboard/dashboard-data";
 import { isCurrency } from "@/lib/hooks/dashboard/currency-data";
-import { mockTrips } from "@/lib/mock-data/dashboard";
 
 const STORAGE_KEY = "aokkorn-trips-v1";
+const LEGACY_LEDGER_PREFIX = "aokkorn-trip-ledger-v1-";
+const RESERVED_ID_KEY = "aokkorn-legacy-mock-max-trip-id-v1";
 const CHANGE_EVENT = "aokkorn-trips-change";
 const SERVER_SNAPSHOT = "__server__";
 
@@ -24,6 +25,10 @@ function getSnapshot() {
 function subscribe(listener: () => void) {
   window.addEventListener("storage", listener);
   window.addEventListener(CHANGE_EVENT, listener);
+
+  if (archiveLegacyMockTrips()) {
+    window.dispatchEvent(new Event(CHANGE_EVENT));
+  }
 
   return () => {
     window.removeEventListener("storage", listener);
@@ -57,14 +62,58 @@ function isTrip(value: unknown): value is Trip {
   );
 }
 
-function parseTrips(snapshot: string | null): Trip[] {
-  if (!snapshot) return mockTrips;
+function parseStoredTrips(snapshot: string | null): Trip[] {
+  if (!snapshot) return [];
 
   try {
     const parsed: unknown = JSON.parse(snapshot);
-    return Array.isArray(parsed) && parsed.every(isTrip) ? parsed : mockTrips;
+    return Array.isArray(parsed) && parsed.every(isTrip) ? parsed : [];
   } catch {
-    return mockTrips;
+    return [];
+  }
+}
+
+function isLegacyMockTrip(trip: Trip) {
+  return (
+    trip.createdAt === "21 ก.ย. 69" &&
+    ((trip.id === 1 && trip.name === "ทริปเชียงใหม่") ||
+      (trip.id === 2 && trip.name === "มื้อเย็นวันศุกร์"))
+  );
+}
+
+function parseTrips(snapshot: string | null): Trip[] {
+  return parseStoredTrips(snapshot).filter((trip) => !isLegacyMockTrip(trip));
+}
+
+function archiveLegacyMockTrips() {
+  try {
+    const storedTrips = parseStoredTrips(window.localStorage.getItem(STORAGE_KEY));
+    const legacyTrips = storedTrips.filter(isLegacyMockTrip);
+    if (legacyTrips.length === 0) return false;
+
+    const ledgers = Object.fromEntries(
+      legacyTrips.map((trip) => [
+        trip.id,
+        window.localStorage.getItem(`${LEGACY_LEDGER_PREFIX}${trip.id}`),
+      ]),
+    );
+    const reservedId = Number(window.localStorage.getItem(RESERVED_ID_KEY)) || 0;
+    const maxId = Math.max(reservedId, ...legacyTrips.map((trip) => trip.id));
+    const backupKey = `aokkorn-legacy-mock-backup-${Date.now()}`;
+
+    window.localStorage.setItem(backupKey, JSON.stringify({ trips: legacyTrips, ledgers }));
+    window.localStorage.setItem(RESERVED_ID_KEY, String(maxId));
+    window.localStorage.setItem(
+      STORAGE_KEY,
+      JSON.stringify(storedTrips.filter((trip) => !isLegacyMockTrip(trip))),
+    );
+    legacyTrips.forEach((trip) => {
+      window.localStorage.removeItem(`${LEGACY_LEDGER_PREFIX}${trip.id}`);
+    });
+    memorySnapshot = null;
+    return true;
+  } catch {
+    return false;
   }
 }
 
@@ -79,7 +128,7 @@ export function useTrips() {
 }
 
 export function addTrip(trip: Trip) {
-  const next = JSON.stringify([...parseTrips(getSnapshot()), trip]);
+  const next = JSON.stringify([...parseStoredTrips(getSnapshot()), trip]);
 
   try {
     window.localStorage.setItem(STORAGE_KEY, next);
@@ -91,18 +140,23 @@ export function addTrip(trip: Trip) {
   window.dispatchEvent(new Event(CHANGE_EVENT));
 }
 
+export function nextTripId() {
+  let reservedId = 0;
+  try {
+    reservedId = Number(window.localStorage.getItem(RESERVED_ID_KEY)) || 0;
+  } catch {
+    // Browser storage may be unavailable; stored trip IDs are still checked.
+  }
+  return Math.max(0, reservedId, ...parseStoredTrips(getSnapshot()).map((trip) => trip.id)) + 1;
+}
+
 export function getTripParticipants(trip: Trip | undefined): TripParticipant[] {
-  if (!trip) return [];
-  if (trip.participants) return trip.participants;
-  return Array.from({ length: Math.max(0, trip.peopleCount - 1) }, (_, index) => ({
-    id: index + 1,
-    name: `เพื่อน ${index + 1}`,
-  }));
+  return trip?.participants ?? [];
 }
 
 export function updateTripParticipants(tripId: number, participants: TripParticipant[]) {
-  const trips = parseTrips(getSnapshot());
-  if (!trips.some((trip) => trip.id === tripId)) return false;
+  const trips = parseStoredTrips(getSnapshot());
+  if (!trips.some((trip) => trip.id === tripId && !isLegacyMockTrip(trip))) return false;
 
   const next = JSON.stringify(
     trips.map((trip) =>
@@ -127,8 +181,8 @@ export function updateTripCurrency(
   amountMinor: number,
   expenseCount: number,
 ) {
-  const trips = parseTrips(getSnapshot());
-  const trip = trips.find((candidate) => candidate.id === tripId);
+  const trips = parseStoredTrips(getSnapshot());
+  const trip = trips.find((candidate) => candidate.id === tripId && !isLegacyMockTrip(candidate));
   if (!trip || !Number.isSafeInteger(amountMinor) || amountMinor < 0) return false;
 
   const next = JSON.stringify(
@@ -149,8 +203,8 @@ export function updateTripCurrency(
 }
 
 export function updateTripStats(tripId: number, amountMinor: number, expenseCount: number) {
-  const trips = parseTrips(getSnapshot());
-  if (!trips.some((trip) => trip.id === tripId)) return;
+  const trips = parseStoredTrips(getSnapshot());
+  if (!trips.some((trip) => trip.id === tripId && !isLegacyMockTrip(trip))) return;
 
   const next = JSON.stringify(
     trips.map((trip) =>

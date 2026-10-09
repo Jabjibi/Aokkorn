@@ -1,15 +1,13 @@
 import { Plus } from "lucide-react";
 import { AppBrand } from "@/components/shared/app-brand";
-import { ProfileChip } from "@/components/shared/profile-chip";
 import { Button } from "@/components/ui/button";
 
 type DashboardHeaderProps = {
-  profile: { name: string; initial: string };
   onCreateTrip: () => void;
   canCreate: boolean;
 };
 
-export function DashboardHeader({ profile, onCreateTrip, canCreate }: DashboardHeaderProps) {
+export function DashboardHeader({ onCreateTrip, canCreate }: DashboardHeaderProps) {
   return (
     <>
       <header className="sticky top-0 z-30 hidden border-b border-black/8 bg-white/90 backdrop-blur-xl md:block">
@@ -34,7 +32,6 @@ export function DashboardHeader({ profile, onCreateTrip, canCreate }: DashboardH
             >
               <Plus /> สร้างทริป
             </Button>
-            <ProfileChip profile={profile} />
           </div>
         </div>
       </header>
@@ -42,7 +39,6 @@ export function DashboardHeader({ profile, onCreateTrip, canCreate }: DashboardH
       <header className="sticky top-0 z-30 border-b border-black/8 bg-white/92 px-4 backdrop-blur-xl md:hidden">
         <div className="flex h-17 items-center justify-between">
           <AppBrand compact />
-          <ProfileChip profile={profile} compact />
         </div>
       </header>
     </>

@@ -47,3 +47,4 @@ next-env.d.ts
 /ref
 /specs
 mock-data
+/supabase

@@ -1,11 +1,11 @@
 "use client";
 
 import { useMemo, useState, type ChangeEvent, type FormEvent } from "react";
-import { mockLandingDemo } from "@/lib/mock-data/landing-demo";
+import { landingDemo } from "@/lib/landing-demo-data";
 import { formatMoney, parseExpenseInput } from "@/lib/money";
 
 export function useExpenseDemo() {
-  const [expenses, setExpenses] = useState(mockLandingDemo.expenses);
+  const [expenses, setExpenses] = useState(landingDemo.expenses);
   const [draft, setDraft] = useState("");
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
@@ -17,12 +17,12 @@ export function useExpenseDemo() {
 
   const shares = useMemo(
     () =>
-      mockLandingDemo.people.map((_, person) =>
+      landingDemo.people.map((_, person) =>
         expenses.reduce(
           (sum, expense) =>
             sum +
-            Math.floor(expense.cents / mockLandingDemo.people.length) +
-            (person < expense.cents % mockLandingDemo.people.length ? 1 : 0),
+            Math.floor(expense.cents / landingDemo.people.length) +
+            (person < expense.cents % landingDemo.people.length ? 1 : 0),
           0,
         ),
       ),
@@ -51,7 +51,7 @@ export function useExpenseDemo() {
   }
 
   function reset() {
-    setExpenses(mockLandingDemo.expenses);
+    setExpenses(landingDemo.expenses);
     setDraft("");
     setError("");
     setNotice("รีเซ็ตตัวอย่างแล้ว");
@@ -63,14 +63,14 @@ export function useExpenseDemo() {
   }
 
   return {
-    tripName: mockLandingDemo.tripName,
-    payerName: mockLandingDemo.payerName,
-    people: mockLandingDemo.people.map((name, index) => ({
+    tripName: landingDemo.tripName,
+    payerName: landingDemo.payerName,
+    people: landingDemo.people.map((name, index) => ({
       name,
       initial: name.slice(0, 1),
       share: formatMoney(shares[index]),
     })),
-    peopleCount: mockLandingDemo.people.length,
+    peopleCount: landingDemo.people.length,
     expenses: expenses.map((expense) => ({ ...expense, amount: formatMoney(expense.cents) })),
     draft,
     changeDraft,

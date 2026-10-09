@@ -5,7 +5,6 @@ import type { Currency } from "@/lib/hooks/dashboard/dashboard-data";
 import { isCurrency } from "@/lib/hooks/dashboard/currency-data";
 import { convertLedgerCurrency, parseExchangeRate } from "@/lib/hooks/trip/currency-conversion";
 import type { TripExpense, TripLedger } from "@/lib/hooks/trip/trip-types";
-import { mockTripExpenses } from "@/lib/mock-data/trip";
 
 const STORAGE_PREFIX = "aokkorn-trip-ledger-v1-";
 const CHANGE_EVENT = "aokkorn-trip-ledger-change";
@@ -37,12 +36,8 @@ function subscribe(listener: () => void) {
   };
 }
 
-function initialLedger(tripId: number): TripLedger {
-  const expenses = mockTripExpenses.filter((expense) => expense.tripId === tripId);
-  return {
-    dayCount: Math.max(1, ...expenses.map((expense) => expense.day)),
-    expenses,
-  };
+function initialLedger(): TripLedger {
+  return { dayCount: 1, expenses: [] };
 }
 
 function isExpense(value: unknown, tripId: number, dayCount: number): value is TripExpense {
@@ -82,11 +77,11 @@ function isExpense(value: unknown, tripId: number, dayCount: number): value is T
 }
 
 function parseLedger(snapshot: string | null, tripId: number): TripLedger {
-  if (!snapshot) return initialLedger(tripId);
+  if (!snapshot) return initialLedger();
 
   try {
     const parsed: unknown = JSON.parse(snapshot);
-    if (!parsed || typeof parsed !== "object") return initialLedger(tripId);
+    if (!parsed || typeof parsed !== "object") return initialLedger();
 
     const ledger = parsed as Partial<TripLedger>;
     if (
@@ -96,12 +91,12 @@ function parseLedger(snapshot: string | null, tripId: number): TripLedger {
       !Array.isArray(ledger.expenses) ||
       !ledger.expenses.every((expense) => isExpense(expense, tripId, ledger.dayCount!))
     ) {
-      return initialLedger(tripId);
+      return initialLedger();
     }
 
     return ledger as TripLedger;
   } catch {
-    return initialLedger(tripId);
+    return initialLedger();
   }
 }
 

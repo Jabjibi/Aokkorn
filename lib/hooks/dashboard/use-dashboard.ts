@@ -19,8 +19,7 @@ import {
   type TripView,
 } from "@/lib/hooks/dashboard/dashboard-data";
 import { formatAmount } from "@/lib/hooks/dashboard/format-amount";
-import { addTrip, useTrips } from "@/lib/hooks/dashboard/use-trips";
-import { mockProfile } from "@/lib/mock-data/dashboard";
+import { addTrip, nextTripId, useTrips } from "@/lib/hooks/dashboard/use-trips";
 
 export function useDashboard() {
   const { trips, ready: tripsReady } = useTrips();
@@ -143,7 +142,7 @@ export function useDashboard() {
     }
 
     const trip: Trip = {
-      id: Math.max(0, ...trips.map((current) => current.id)) + 1,
+      id: nextTripId(),
       name: normalizedName,
       createdAt: "วันนี้",
       amountMinor: 0,
@@ -164,7 +163,6 @@ export function useDashboard() {
   }
 
   return {
-    profile: mockProfile,
     trips: visibleTrips,
     tripCount,
     maxTrips: MAX_TRIPS,

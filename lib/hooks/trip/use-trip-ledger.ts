@@ -1,24 +1,18 @@
 "use client";
 
 import { useCallback, useMemo, useSyncExternalStore } from "react";
-import type { Currency } from "@/lib/hooks/dashboard/dashboard-data";
 import { isCurrency } from "@/lib/hooks/dashboard/currency-data";
-import { convertLedgerCurrency, parseExchangeRate } from "@/lib/hooks/trip/currency-conversion";
+import { parseExchangeRate } from "@/lib/hooks/trip/currency-conversion";
 import type { TripExpense, TripLedger } from "@/lib/hooks/trip/trip-types";
 
 const STORAGE_PREFIX = "aokkorn-trip-ledger-v1-";
-const CHANGE_EVENT = "aokkorn-trip-ledger-change";
 const SERVER_SNAPSHOT = "__server__";
-const memorySnapshots = new Map<number, string>();
 
 function storageKey(tripId: number) {
   return `${STORAGE_PREFIX}${tripId}`;
 }
 
 function getSnapshot(tripId: number) {
-  const fallback = memorySnapshots.get(tripId);
-  if (fallback !== undefined) return fallback;
-
   try {
     return window.localStorage.getItem(storageKey(tripId));
   } catch {
@@ -28,11 +22,9 @@ function getSnapshot(tripId: number) {
 
 function subscribe(listener: () => void) {
   window.addEventListener("storage", listener);
-  window.addEventListener(CHANGE_EVENT, listener);
 
   return () => {
     window.removeEventListener("storage", listener);
-    window.removeEventListener(CHANGE_EVENT, listener);
   };
 }
 
@@ -100,19 +92,7 @@ function parseLedger(snapshot: string | null, tripId: number): TripLedger {
   }
 }
 
-function writeLedger(tripId: number, ledger: TripLedger) {
-  const snapshot = JSON.stringify(ledger);
-
-  try {
-    window.localStorage.setItem(storageKey(tripId), snapshot);
-    memorySnapshots.delete(tripId);
-  } catch {
-    memorySnapshots.set(tripId, snapshot);
-  }
-
-  window.dispatchEvent(new Event(CHANGE_EVENT));
-}
-
+/** อ่าน ledger เดิมจาก browser เท่านั้น; ไม่มี mutation API หรือ localStorage fallback สำหรับการบันทึก */
 export function useTripLedger(tripId: number) {
   const readSnapshot = useCallback(() => getSnapshot(tripId), [tripId]);
   const snapshot = useSyncExternalStore(subscribe, readSnapshot, () => SERVER_SNAPSHOT);
@@ -120,82 +100,5 @@ export function useTripLedger(tripId: number) {
     () => parseLedger(snapshot === SERVER_SNAPSHOT ? null : snapshot, tripId),
     [snapshot, tripId],
   );
-
-  const addExpense = useCallback(
-    (day: number, name: string, amountMinor: number, currency: Currency) => {
-      const current = parseLedger(getSnapshot(tripId), tripId);
-      const next: TripLedger = {
-        ...current,
-        expenses: [
-          ...current.expenses,
-          {
-            id: Math.max(0, ...current.expenses.map((expense) => expense.id)) + 1,
-            tripId,
-            day,
-            name,
-            amountMinor,
-            currency,
-            convertedAmountMinor: amountMinor,
-          },
-        ],
-      };
-      writeLedger(tripId, next);
-      return next;
-    },
-    [tripId],
-  );
-
-  const removeExpense = useCallback(
-    (expenseId: number) => {
-      const current = parseLedger(getSnapshot(tripId), tripId);
-      const next: TripLedger = {
-        ...current,
-        expenses: current.expenses.filter((expense) => expense.id !== expenseId),
-      };
-      writeLedger(tripId, next);
-      return next;
-    },
-    [tripId],
-  );
-
-  const clearExpenses = useCallback(() => {
-    const current = parseLedger(getSnapshot(tripId), tripId);
-    const next: TripLedger = { ...current, expenses: [] };
-    writeLedger(tripId, next);
-    return next;
-  }, [tripId]);
-
-  const addDay = useCallback(() => {
-    const current = parseLedger(getSnapshot(tripId), tripId);
-    const next: TripLedger = { ...current, dayCount: current.dayCount + 1 };
-    writeLedger(tripId, next);
-    return next.dayCount;
-  }, [tripId]);
-
-  const changeCurrency = useCallback(
-    (currentBase: Currency, target: Currency, rates: Partial<Record<Currency, string>>) => {
-      const current = parseLedger(getSnapshot(tripId), tripId);
-      const next = convertLedgerCurrency(
-        current,
-        currentBase,
-        target,
-        rates,
-        new Date().toISOString(),
-      );
-      if (!next) return null;
-      writeLedger(tripId, next);
-      return next;
-    },
-    [tripId],
-  );
-
-  return {
-    ledger,
-    ready: snapshot !== SERVER_SNAPSHOT,
-    addExpense,
-    removeExpense,
-    clearExpenses,
-    addDay,
-    changeCurrency,
-  };
+  return { ledger, ready: snapshot !== SERVER_SNAPSHOT };
 }

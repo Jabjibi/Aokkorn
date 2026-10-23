@@ -5,9 +5,18 @@ import { Button } from "@/components/ui/button";
 type DashboardHeaderProps = {
   onCreateTrip: () => void;
   canCreate: boolean;
+  displayName: string;
+  onLogout: () => Promise<void>;
+  loggingOut: boolean;
 };
 
-export function DashboardHeader({ onCreateTrip, canCreate }: DashboardHeaderProps) {
+export function DashboardHeader({
+  onCreateTrip,
+  canCreate,
+  displayName,
+  onLogout,
+  loggingOut,
+}: DashboardHeaderProps) {
   return (
     <>
       <header className="sticky top-0 z-30 hidden border-b border-black/8 bg-white/90 backdrop-blur-xl md:block">
@@ -25,6 +34,10 @@ export function DashboardHeader({ onCreateTrip, canCreate }: DashboardHeaderProp
             </a>
           </nav>
           <div className="ml-auto flex items-center gap-3">
+            <span className="max-w-36 truncate text-sm font-semibold">{displayName}</span>
+            <Button variant="ghost" onClick={onLogout} disabled={loggingOut}>
+              {loggingOut ? "กำลังออก…" : "ออกจากระบบ"}
+            </Button>
             <Button
               className="h-11 rounded-xl bg-[#cfff47] px-5 font-bold text-black shadow-none hover:bg-[#bced39]"
               onClick={onCreateTrip}
@@ -39,6 +52,9 @@ export function DashboardHeader({ onCreateTrip, canCreate }: DashboardHeaderProp
       <header className="sticky top-0 z-30 border-b border-black/8 bg-white/92 px-4 backdrop-blur-xl md:hidden">
         <div className="flex h-17 items-center justify-between">
           <AppBrand compact />
+          <Button variant="ghost" size="sm" onClick={onLogout} disabled={loggingOut}>
+            {loggingOut ? "กำลังออก…" : "ออกจากระบบ"}
+          </Button>
         </div>
       </header>
     </>

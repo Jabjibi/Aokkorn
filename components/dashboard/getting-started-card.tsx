@@ -19,7 +19,9 @@ export function GettingStartedCard({
             เริ่มง่ายในทริปแรกของคุณ
           </h2>
           <p className="mt-1 text-xs leading-5 text-black/45 lg:text-sm lg:leading-6">
-            ตั้งชื่อทริป เลือกสกุลเงินหลัก แล้วเพิ่มเพื่อนด้วยชื่อเล่นได้ทันที
+            {canCreate
+              ? "ตั้งชื่อทริป เลือกสกุลเงินหลัก แล้วเพิ่มเพื่อนด้วยชื่อเล่นได้ทันที"
+              : "ยังไม่เปิดการสร้างทริปใหม่ ระหว่างนี้เปิดดูข้อมูลเดิมได้"}
           </p>
           <div className="mt-3 hidden flex-wrap gap-2 text-xs font-semibold text-black/50 sm:flex">
             {["สร้างทริป", "เพิ่มเพื่อน", "จดค่าใช้จ่าย"].map((label) => (

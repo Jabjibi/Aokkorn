@@ -5,10 +5,12 @@ export function RemovableChip({
   label,
   onRemove,
   removeLabel,
+  disabled = false,
 }: {
   label: string;
   onRemove: () => void;
   removeLabel: string;
+  disabled?: boolean;
 }) {
   return (
     <span className="flex items-center gap-1 rounded-full border border-black/10 bg-[#f8f8f6] py-1 pr-1 pl-3 text-xs sm:text-sm">
@@ -17,6 +19,7 @@ export function RemovableChip({
         type="button"
         variant="ghost"
         size="icon-sm"
+        disabled={disabled}
         onClick={onRemove}
         aria-label={removeLabel}
         className="size-6 rounded-full text-black/45 hover:bg-black/5 hover:text-black"

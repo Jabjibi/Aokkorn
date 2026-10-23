@@ -1,14 +1,12 @@
-import { ArrowUpRight } from "lucide-react";
-import Link from "next/link";
 import { AppBrand } from "@/components/shared/app-brand";
-import { Button } from "@/components/ui/button";
+import { LineLoginEntry } from "@/components/auth/line-login-entry";
 import { navigationItems } from "@/lib/landing-content";
 
 export function Brand({ compact = false }: { compact?: boolean }) {
   return <AppBrand href="#top" compact={compact} />;
 }
 
-export function SiteHeader() {
+export function SiteHeader({ loginMessage = "" }: { loginMessage?: string }) {
   return (
     <header id="top" className="relative z-20 mx-auto max-w-[1440px] px-5 pt-6 sm:px-8 lg:px-12">
       <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-5 border-b border-white/20 pb-5">
@@ -29,15 +27,7 @@ export function SiteHeader() {
             </a>
           ))}
         </nav>
-        <Button
-          asChild
-          variant="outline"
-          className="h-10 rounded-full border-white bg-transparent px-4 text-xs text-white hover:bg-white hover:text-[#0038ff] sm:px-5 sm:text-sm"
-        >
-          <Link href="/dashboard">
-            เริ่มใช้งาน <ArrowUpRight />
-          </Link>
-        </Button>
+        <LineLoginEntry initialMessage={loginMessage} />
       </div>
     </header>
   );

@@ -1,8 +1,10 @@
 "use client";
 
+import { TripReadOnlyNotice } from "@/components/shared/trip-read-only-notice";
 import { CreateTripDialog } from "@/components/dashboard/create-trip-dialog";
 import { DashboardHeader } from "@/components/dashboard/dashboard-header";
 import { GettingStartedCard } from "@/components/dashboard/getting-started-card";
+import { useSessionAccount } from "@/lib/hooks/auth/use-session";
 import { useDashboard } from "@/lib/hooks/dashboard/use-dashboard";
 import { MobileNavigation } from "@/components/dashboard/mobile-navigation";
 import { TripsSection } from "@/components/dashboard/trips-section";
@@ -10,12 +12,25 @@ import { WelcomeCard } from "@/components/dashboard/welcome-card";
 
 export function DashboardShell() {
   const dashboard = useDashboard();
+  const account = useSessionAccount();
 
   return (
     <div className="dashboard-mobile-font min-h-dvh bg-[#f7f7f3] text-[#11120f]">
-      <DashboardHeader onCreateTrip={dashboard.openCreateTrip} canCreate={dashboard.canCreate} />
+      <DashboardHeader
+        onCreateTrip={dashboard.openCreateTrip}
+        canCreate={dashboard.canCreate}
+        displayName={account.session.user.displayName}
+        onLogout={account.logout}
+        loggingOut={account.loggingOut}
+      />
+      {account.logoutError && (
+        <p role="alert" className="mx-auto max-w-7xl px-6 pt-3 text-sm text-red-700">
+          {account.logoutError}
+        </p>
+      )}
 
       <main className="mx-auto w-full max-w-7xl px-4 pt-4 pb-32 sm:px-6 sm:pt-6 lg:px-8 lg:pt-9 lg:pb-14">
+        <TripReadOnlyNotice message={dashboard.readOnlyMessage} />
         <WelcomeCard totalLabel={dashboard.totalLabel} />
         <GettingStartedCard
           onCreateTrip={dashboard.openCreateTrip}

@@ -1,5 +1,11 @@
 import { LandingPage } from "@/components/landing";
+import { loginMessage } from "@/lib/hooks/auth/login-message";
 
-export default function Home() {
-  return <LandingPage />;
+export default async function Home({
+  searchParams,
+}: {
+  searchParams: Promise<{ login?: string }>;
+}) {
+  const { login } = await searchParams;
+  return <LandingPage loginMessage={loginMessage(login)} />;
 }

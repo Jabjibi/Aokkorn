@@ -1,6 +1,7 @@
 import type { ChangeEventHandler, FormEventHandler } from "react";
 
 export type ReceivingAccountView = {
+  readOnly?: boolean;
   name: string;
   method: "promptpay" | "bank";
   bankName: string;

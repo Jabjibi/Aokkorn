@@ -10,6 +10,7 @@ type CurrencyEditor = {
   current: Currency;
   selected: Currency;
   options: readonly { value: Currency; label: string }[];
+  canEdit: boolean;
   canSave: boolean;
   previewLabel: string | null;
   error: string;
@@ -43,6 +44,7 @@ export function TripCurrencyEditor({
           type="button"
           variant="outline"
           size="sm"
+          disabled={!editor.canEdit}
           onClick={editor.onToggle}
           aria-expanded={editor.open}
           aria-controls="trip-currency-editor"

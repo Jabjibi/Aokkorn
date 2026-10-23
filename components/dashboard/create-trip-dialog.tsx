@@ -106,6 +106,7 @@ export function CreateTripDialog({
             </Button>
             <Button
               type="submit"
+              disabled
               className="h-11 rounded-xl bg-black px-5 text-xs font-bold text-white hover:bg-black/80 lg:text-sm"
             >
               <Plus /> สร้างทริป

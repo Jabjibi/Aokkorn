@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, type ChangeEvent, type FormEvent } from "react";
+import { useState, type ChangeEvent, type FormEvent } from "react";
 import type { Currency } from "@/lib/hooks/dashboard/dashboard-data";
 import { formatAmount, formatAverage } from "@/lib/hooks/dashboard/format-amount";
 import { getConvertedAmountMinor, getSourceCurrency } from "@/lib/hooks/trip/currency-conversion";
@@ -14,7 +14,7 @@ type PaymentAccount = {
   number: string;
 };
 
-const LEGACY_STORAGE_KEY = "aokkorn-payment-account-v1";
+import { TRIP_READ_ONLY_MESSAGE } from "@/lib/hooks/trip/trip-availability";
 
 function accountNumber(value: string) {
   return value.replace(/[\s-]/g, "");
@@ -40,20 +40,12 @@ export function useTripSummary({
   const [draftMethod, setDraftMethod] = useState<PaymentMethod>("promptpay");
   const [draftBankName, setDraftBankName] = useState("");
   const [draftNumber, setDraftNumber] = useState("");
-  const [savedAccount, setSavedAccount] = useState<PaymentAccount | null>(null);
+  const [savedAccount] = useState<PaymentAccount | null>(null);
   const [editingAccount, setEditingAccount] = useState(false);
   const [pendingAccountDelete, setPendingAccountDelete] = useState(false);
   const [accountMessage, setAccountMessage] = useState("");
   const [copyMessage, setCopyMessage] = useState("");
   const [shareMessage, setShareMessage] = useState("");
-
-  useEffect(() => {
-    try {
-      window.localStorage.removeItem(LEGACY_STORAGE_KEY);
-    } catch {
-      // Browser storage may be unavailable; no account data is read from it.
-    }
-  }, []);
 
   const digits = accountNumber(draftNumber);
   const validNumber =
@@ -86,22 +78,7 @@ export function useTripSummary({
 
   function handleSaveAccount(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    if (!accountValid) {
-      setAccountMessage("กรอกชื่อและเลขบัญชีรับเงินให้ครบก่อนบันทึก");
-      return;
-    }
-
-    const account: PaymentAccount = {
-      name: draftName.trim(),
-      method: draftMethod,
-      bankName: draftMethod === "bank" ? draftBankName.trim() : "",
-      number: digits,
-    };
-    setSavedAccount(account);
-    setEditingAccount(false);
-    setPendingAccountDelete(false);
-    setAccountMessage("");
-    setCopyMessage("");
+    setAccountMessage(TRIP_READ_ONLY_MESSAGE);
   }
 
   function editAccount() {
@@ -123,14 +100,7 @@ export function useTripSummary({
   }
 
   function confirmDeleteAccount() {
-    setSavedAccount(null);
-    setDraftName("");
-    setDraftMethod("promptpay");
-    setDraftBankName("");
-    setDraftNumber("");
-    setPendingAccountDelete(false);
-    setCopyMessage("");
-    setAccountMessage("ลบบัญชีรับเงินแล้ว");
+    setAccountMessage(TRIP_READ_ONLY_MESSAGE);
   }
 
   async function copyAccountNumber() {
@@ -203,6 +173,7 @@ export function useTripSummary({
     highestName: highest?.name ?? "ยังไม่มีรายการ",
     breakdown,
     account: {
+      readOnly: true,
       name: draftName,
       method: draftMethod,
       bankName: draftBankName,

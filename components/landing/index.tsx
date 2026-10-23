@@ -11,7 +11,7 @@ const landingFont = Noto_Sans_Thai({
   display: "swap",
 });
 
-export function LandingPage() {
+export function LandingPage({ loginMessage = "" }: { loginMessage?: string }) {
   return (
     <div className={`landing-page ${landingFont.className}`}>
       <a
@@ -21,7 +21,7 @@ export function LandingPage() {
         ข้ามไปเนื้อหา
       </a>
       <div className="landing-grid relative">
-        <SiteHeader />
+        <SiteHeader loginMessage={loginMessage} />
         <main id="main-content">
           <Hero />
           <Features />

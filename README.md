@@ -1,4 +1,14 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Aokkorn frontend
+
+เชื่อม LINE Login/session/logout กับ NestJS backend แล้ว ผ่าน modal บนหน้าเดิม
+หน้า dashboard และรายละเอียดทริปตรวจ session ก่อนแสดงข้อมูล ส่วนทริป/ค่าใช้จ่ายเปิดอ่านข้อมูลเดิมจาก browser เท่านั้น ยังไม่เปิดการสร้าง แก้ไข หรือลบจนกว่าจะเชื่อม API จริง
+
+ตั้ง `NEXT_PUBLIC_API_BASE_URL=http://localhost:5016` ใน `.env.local` และดู [flow/โครงสร้าง/ขอบเขตการเชื่อมต่อ](docs/AUTH.md)
+
+```bash
+npm test
+npm run check
+```
 
 ## Getting Started
 

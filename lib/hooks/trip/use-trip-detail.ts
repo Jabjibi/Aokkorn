@@ -2,20 +2,14 @@
 
 import { useState, type ChangeEvent, type FormEvent } from "react";
 import { currencyOptions, type Currency } from "@/lib/hooks/dashboard/dashboard-data";
-import { getCurrencyDigits, getCurrencyLabel } from "@/lib/hooks/dashboard/currency-data";
+import { getCurrencyLabel } from "@/lib/hooks/dashboard/currency-data";
 import {
   formatAmount,
   formatAverage,
   formatNumber,
   formatShare,
 } from "@/lib/hooks/dashboard/format-amount";
-import {
-  getTripParticipants,
-  updateTripCurrency,
-  updateTripParticipants,
-  updateTripStats,
-  useTrips,
-} from "@/lib/hooks/dashboard/use-trips";
+import { getTripParticipants, useTrips } from "@/lib/hooks/dashboard/use-trips";
 import {
   convertLedgerCurrency,
   getConvertedAmountMinor,
@@ -25,46 +19,14 @@ import {
 } from "@/lib/hooks/trip/currency-conversion";
 import { useTripLedger } from "@/lib/hooks/trip/use-trip-ledger";
 import { useTripSummary } from "@/lib/hooks/trip/use-trip-summary";
-import type { TripExpense, TripLedger } from "@/lib/hooks/trip/trip-types";
+import { TRIP_READ_ONLY_MESSAGE } from "@/lib/hooks/trip/trip-availability";
 
 export type TripTab = "items" | "summary" | "split";
-
-function parseAmountMinor(value: string, currency: Currency) {
-  const input = value.trim();
-  const fractionDigits = getCurrencyDigits(currency);
-  const whole = "(?:\\d+|\\d{1,3}(?:,\\d{3})+)";
-  const valid =
-    fractionDigits === 0
-      ? new RegExp(`^${whole}$`).test(input)
-      : new RegExp(`^${whole}(?:\\.\\d{1,${fractionDigits}})?$`).test(input);
-  if (!valid) return null;
-
-  const [wholeAmount, fraction = ""] = input.replace(/,/g, "").split(".");
-  const amount =
-    Number(wholeAmount) * 10 ** fractionDigits + Number(fraction.padEnd(fractionDigits, "0"));
-  return Number.isSafeInteger(amount) && amount > 0 ? amount : null;
-}
-
-function syncTripStats(tripId: number, ledger: TripLedger) {
-  updateTripStats(
-    tripId,
-    ledger.expenses.reduce((sum, expense) => sum + getConvertedAmountMinor(expense), 0),
-    ledger.expenses.length,
-  );
-}
 
 export function useTripDetail(tripId: string) {
   const numericTripId = Number(tripId);
   const { trips, ready: tripsReady } = useTrips();
-  const {
-    ledger,
-    ready: ledgerReady,
-    addExpense,
-    removeExpense,
-    clearExpenses,
-    addDay,
-    changeCurrency,
-  } = useTripLedger(numericTripId);
+  const { ledger, ready: ledgerReady } = useTripLedger(numericTripId);
   const [activeTab, setActiveTab] = useState<TripTab>("items");
   const [formDay, setFormDay] = useState<number | null>(null);
   const [expenseName, setExpenseName] = useState("");
@@ -100,12 +62,12 @@ export function useTripDetail(tripId: string) {
     0,
   );
 
+  function blockWrite() {
+    setNotice(TRIP_READ_ONLY_MESSAGE);
+  }
+
   function openCurrencyEditor() {
-    if (!trip) return;
-    setSelectedCurrency(trip.currency);
-    setCurrencyRates({});
-    setCurrencyError("");
-    setCurrencyEditorOpen(true);
+    blockWrite();
   }
 
   function closeCurrencyEditor() {
@@ -115,32 +77,11 @@ export function useTripDetail(tripId: string) {
 
   function saveCurrency(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    if (!trip || !selectedCurrency) return;
-    if (selectedCurrency === trip.currency) {
-      closeCurrencyEditor();
-      return;
-    }
-    if (!ratesValid) {
-      setCurrencyError("กรอกอัตราแลกเปลี่ยนที่มากกว่า 0 ให้ครบทุกสกุลเงิน");
-      return;
-    }
-    const next = changeCurrency(trip.currency, selectedCurrency, currencyRates);
-    if (!next) {
-      setCurrencyError("คำนวณยอดในสกุลเงินใหม่ไม่สำเร็จ กรุณาตรวจอัตราแลกเปลี่ยน");
-      return;
-    }
-    const total = next.expenses.reduce((sum, expense) => sum + getConvertedAmountMinor(expense), 0);
-    updateTripCurrency(trip.id, selectedCurrency, total, next.expenses.length);
-    setNotice(`เปลี่ยนสกุลเงินหลักเป็น ${getCurrencyLabel(selectedCurrency)} แล้ว`);
-    closeCurrencyEditor();
+    setCurrencyError(TRIP_READ_ONLY_MESSAGE);
   }
 
-  function openExpenseForm(day: number) {
-    setPendingClear(false);
-    setFormDay(day);
-    setExpenseName("");
-    setExpenseAmount("");
-    setFormError("");
+  function openExpenseForm() {
+    blockWrite();
   }
 
   function closeExpenseForm() {
@@ -160,61 +101,17 @@ export function useTripDetail(tripId: string) {
 
   function handleAddExpense(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    if (!trip || formDay === null) return;
-
-    const name = expenseName.trim();
-    if (!name) {
-      setFormError("ใส่ชื่อรายการก่อนบันทึก");
-      return;
-    }
-
-    const amountMinor = parseAmountMinor(expenseAmount, trip.currency);
-    if (amountMinor === null) {
-      setFormError(
-        getCurrencyDigits(trip.currency) === 0
-          ? "ใส่จำนวนเงินเต็มที่มากกว่า 0"
-          : `ใส่จำนวนเงินที่มากกว่า 0 และทศนิยมไม่เกิน ${getCurrencyDigits(trip.currency)} ตำแหน่ง`,
-      );
-      return;
-    }
-
-    const nextTotal = ledger.expenses.reduce(
-      (sum, expense) => sum + getConvertedAmountMinor(expense),
-      amountMinor,
-    );
-    if (!Number.isSafeInteger(nextTotal)) {
-      setFormError("ยอดรวมสูงเกินช่วงจำนวนเงินที่รองรับ");
-      return;
-    }
-
-    const next = addExpense(formDay, name, amountMinor, trip.currency);
-    syncTripStats(trip.id, next);
-    setNotice(`เพิ่ม “${name}” ในวัน ${formDay} แล้ว`);
-    closeExpenseForm();
+    setFormError(TRIP_READ_ONLY_MESSAGE);
   }
 
-  function confirmRemoveExpense(expense: TripExpense) {
-    if (!trip) return;
-
-    const next = removeExpense(expense.id);
-    syncTripStats(trip.id, next);
-    setPendingDeleteId(null);
-    setPendingClear(false);
-    setNotice(`ลบ “${expense.name}” แล้ว`);
+  function confirmRemoveExpense() {
+    blockWrite();
   }
-
   function handleAddDay() {
-    const day = addDay();
-    setNotice(`เพิ่มวัน ${day} แล้ว`);
-    setFormDay(null);
-    setPendingClear(false);
+    blockWrite();
   }
-
   function requestClearExpenses() {
-    if (ledger.expenses.length === 0) return;
-    setPendingDeleteId(null);
-    closeExpenseForm();
-    setPendingClear(true);
+    blockWrite();
   }
 
   function selectTab(tab: TripTab) {
@@ -223,9 +120,7 @@ export function useTripDetail(tripId: string) {
   }
 
   function openFriendForm() {
-    setFriendName("");
-    setFriendError("");
-    setFriendFormOpen(true);
+    blockWrite();
   }
 
   function closeFriendForm() {
@@ -240,72 +135,17 @@ export function useTripDetail(tripId: string) {
 
   function handleAddFriend(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    if (!trip) return;
-    const name = friendName.trim();
-    if (!name) {
-      setFriendError("ใส่ชื่อเพื่อนก่อนเพิ่ม");
-      return;
-    }
-    if (
-      participants.some(
-        (participant) => participant.name.toLocaleLowerCase() === name.toLocaleLowerCase(),
-      )
-    ) {
-      setFriendError("ชื่อนี้อยู่ในทริปแล้ว");
-      return;
-    }
-
-    const next = [
-      ...participants,
-      { id: Math.max(0, ...participants.map((participant) => participant.id)) + 1, name },
-    ];
-    if (updateTripParticipants(trip.id, next)) {
-      setNotice(`เพิ่ม ${name} เข้าทริปแล้ว`);
-      closeFriendForm();
-    }
+    setFriendError(TRIP_READ_ONLY_MESSAGE);
   }
 
-  function handleRemoveFriend(participantId: number) {
-    if (!trip) return;
-    const removed = participants.find((participant) => participant.id === participantId);
-    if (!removed) return;
-    if (
-      updateTripParticipants(
-        trip.id,
-        participants.filter((participant) => participant.id !== participantId),
-      )
-    ) {
-      setNotice(`นำ ${removed.name} ออกจากทริปแล้ว`);
-    }
+  function handleRemoveFriend() {
+    blockWrite();
   }
-
   function confirmClearExpenses() {
-    if (!trip) return;
-
-    const clearedCount = ledger.expenses.length;
-    const next = clearExpenses();
-    syncTripStats(trip.id, next);
-    setPendingClear(false);
-    setPendingDeleteId(null);
-    closeExpenseForm();
-    setActiveTab("items");
-    setNotice(`ล้างรายการ ${clearedCount} รายการแล้ว`);
+    blockWrite();
   }
-
-  async function handleShareTrip() {
-    if (!trip) return;
-
-    try {
-      if (navigator.share) {
-        await navigator.share({ title: trip.name, url: window.location.href });
-      } else {
-        await navigator.clipboard.writeText(window.location.href);
-        setNotice("คัดลอกลิงก์ทริปแล้ว");
-      }
-    } catch (error) {
-      if (error instanceof DOMException && error.name === "AbortError") return;
-      setNotice("แชร์ทริปไม่สำเร็จ ลองใหม่อีกครั้ง");
-    }
+  function handleShareTrip() {
+    blockWrite();
   }
 
   const expenses = ledger.expenses;
@@ -332,7 +172,7 @@ export function useTripDetail(tripId: string) {
         splitSharePercent: peopleCount > 1 ? 100 / peopleCount : 0,
         participants: participants.map((participant) => ({
           ...participant,
-          onRemove: () => handleRemoveFriend(participant.id),
+          onRemove: handleRemoveFriend,
         })),
         days: Array.from({ length: ledger.dayCount }, (_, index) => {
           const dayNumber = index + 1;
@@ -344,7 +184,7 @@ export function useTripDetail(tripId: string) {
               dayExpenses.reduce((sum, expense) => sum + getConvertedAmountMinor(expense), 0),
               trip.currency,
             ),
-            onAddExpense: () => openExpenseForm(dayNumber),
+            onAddExpense: openExpenseForm,
             formOpen: formDay === dayNumber,
             expenses: dayExpenses.map((expense) => ({
               id: expense.id,
@@ -358,8 +198,8 @@ export function useTripDetail(tripId: string) {
                   ? null
                   : `≈ ${formatAmount(getConvertedAmountMinor(expense), trip.currency)}`,
               pendingDelete: pendingDeleteId === expense.id,
-              onRemove: () => setPendingDeleteId(expense.id),
-              onConfirmRemove: () => confirmRemoveExpense(expense),
+              onRemove: blockWrite,
+              onConfirmRemove: confirmRemoveExpense,
               onCancelRemove: () => setPendingDeleteId(null),
             })),
           };
@@ -368,6 +208,8 @@ export function useTripDetail(tripId: string) {
     : null;
 
   return {
+    canEdit: false,
+    readOnlyMessage: TRIP_READ_ONLY_MESSAGE,
     ready: tripsReady && ledgerReady,
     detail,
     summary,
@@ -402,7 +244,8 @@ export function useTripDetail(tripId: string) {
       })),
       previewLabel:
         previewTotalMinor === undefined ? null : formatAmount(previewTotalMinor, selectedBase),
-      canSave: selectedCurrency !== null && previewLedger !== null,
+      canEdit: false,
+      canSave: false,
       error: currencyError,
       onClose: closeCurrencyEditor,
       onToggle: currencyEditorOpen ? closeCurrencyEditor : openCurrencyEditor,
@@ -414,6 +257,7 @@ export function useTripDetail(tripId: string) {
       onSubmit: saveCurrency,
     },
     friendForm: {
+      disabled: true,
       open: friendFormOpen,
       name: friendName,
       error: friendError,

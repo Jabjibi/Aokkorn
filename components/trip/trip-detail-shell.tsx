@@ -10,6 +10,7 @@ import {
   UserRoundPlus,
   X,
 } from "lucide-react";
+import { TripReadOnlyNotice } from "@/components/shared/trip-read-only-notice";
 import { SegmentedTabs } from "@/components/shared/segmented-tabs";
 import { TripCurrencyEditor } from "@/components/trip/trip-currency-editor";
 import { TripExpenseForm } from "@/components/trip/trip-expense-form";
@@ -21,6 +22,8 @@ import { useTripDetail } from "@/lib/hooks/trip/use-trip-detail";
 export function TripDetailShell({ tripId }: { tripId: string }) {
   const {
     ready,
+    canEdit,
+    readOnlyMessage,
     detail,
     summary,
     activeTab,
@@ -84,6 +87,7 @@ export function TripDetailShell({ tripId }: { tripId: string }) {
             <Button
               type="button"
               size="sm"
+              disabled={!canEdit}
               onClick={onShareTrip}
               className="h-7 gap-1 rounded-full bg-primary px-2 text-[11px] font-bold text-primary-foreground hover:bg-[#b8ed37] sm:h-8 sm:px-3 sm:text-sm"
             >
@@ -111,7 +115,7 @@ export function TripDetailShell({ tripId }: { tripId: string }) {
               variant="ghost"
               size="sm"
               onClick={onRequestClear}
-              disabled={detail.expenseCount === 0}
+              disabled={!canEdit || detail.expenseCount === 0}
               aria-label="ล้างรายการค่าใช้จ่ายทั้งหมด"
               className="h-8 shrink-0 px-1 text-[11px] font-semibold text-black/45 hover:bg-black/[0.025] hover:text-black disabled:opacity-40 sm:text-sm"
             >
@@ -124,6 +128,7 @@ export function TripDetailShell({ tripId }: { tripId: string }) {
       <main
         className={`mx-auto w-full max-w-5xl flex-1 px-6 ${activeTab === "summary" ? "pb-8" : "pb-36"}`}
       >
+        <TripReadOnlyNotice message={readOnlyMessage} />
         {activeTab === "items" && pendingClear && (
           <div
             role="group"
@@ -144,6 +149,7 @@ export function TripDetailShell({ tripId }: { tripId: string }) {
               type="button"
               variant="destructive"
               size="sm"
+              disabled={!canEdit}
               onClick={onConfirmClear}
               className="text-xs sm:text-sm"
             >
@@ -188,6 +194,7 @@ export function TripDetailShell({ tripId }: { tripId: string }) {
                             type="button"
                             variant="ghost"
                             size="icon-sm"
+                            disabled={!canEdit}
                             onClick={expense.onRemove}
                             aria-label={`ลบรายการ ${expense.name}`}
                             className="text-black/35 hover:bg-red-50 hover:text-red-600"
@@ -211,6 +218,7 @@ export function TripDetailShell({ tripId }: { tripId: string }) {
                               type="button"
                               variant="destructive"
                               size="sm"
+                              disabled={!canEdit}
                               onClick={expense.onConfirmRemove}
                               className="text-xs sm:text-sm"
                             >
@@ -244,6 +252,7 @@ export function TripDetailShell({ tripId }: { tripId: string }) {
                   <Button
                     type="button"
                     variant="ghost"
+                    disabled={!canEdit}
                     onClick={day.onAddExpense}
                     className="flex min-h-16 w-full justify-start rounded-none border-b border-[#f0f0ed] px-4 text-xs font-semibold text-black/55 hover:bg-black/[0.025] hover:text-black sm:text-base"
                   >
@@ -256,6 +265,7 @@ export function TripDetailShell({ tripId }: { tripId: string }) {
             <Button
               type="button"
               variant="ghost"
+              disabled={!canEdit}
               onClick={onAddDay}
               className="flex min-h-16 w-full rounded-none text-sm font-bold text-black hover:bg-primary/15 sm:text-base"
             >

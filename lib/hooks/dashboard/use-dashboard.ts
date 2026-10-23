@@ -15,14 +15,15 @@ import {
   MAX_TRIPS,
   currencyOptions,
   type Currency,
-  type Trip,
   type TripView,
 } from "@/lib/hooks/dashboard/dashboard-data";
 import { formatAmount } from "@/lib/hooks/dashboard/format-amount";
-import { addTrip, nextTripId, useTrips } from "@/lib/hooks/dashboard/use-trips";
+import { useTrips } from "@/lib/hooks/dashboard/use-trips";
+
+import { TRIP_READ_ONLY_MESSAGE } from "@/lib/hooks/trip/trip-availability";
 
 export function useDashboard() {
-  const { trips, ready: tripsReady } = useTrips();
+  const { trips } = useTrips();
   const [sortNewestFirst, setSortNewestFirst] = useState(true);
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [name, setNameValue] = useState("");
@@ -38,7 +39,8 @@ export function useDashboard() {
   const dialogErrorId = useId();
 
   const tripCount = trips.length;
-  const canCreate = tripsReady && tripCount < MAX_TRIPS;
+  // ปิดจนกว่าจะมี POST /trips จริง; ห้ามกลับไปสร้าง ID/บันทึกใน browser
+  const canCreate = false;
   const sortLabel = sortNewestFirst ? "อัปเดตล่าสุด" : "เก่าสุดก่อน";
 
   const totalLabel = useMemo(
@@ -104,7 +106,10 @@ export function useDashboard() {
   }, [isCreateOpen, closeCreateTrip]);
 
   function openCreateTrip(event?: MouseEvent<HTMLElement>) {
-    if (!canCreate) return;
+    if (!canCreate) {
+      setNotice(TRIP_READ_ONLY_MESSAGE);
+      return;
+    }
 
     triggerRef.current = event?.currentTarget ?? createButtonRef.current;
     setNameValue("");
@@ -126,36 +131,10 @@ export function useDashboard() {
     setCurrency(event.target.value as Currency);
   }
 
+  /** Event → ข้อความยังไม่เปิดใช้งาน; ไม่มี persistence หรือ success notice */
   function submitCreateTrip(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    const normalizedName = name.trim();
-
-    if (!normalizedName) {
-      setError("ใส่ชื่อทริปก่อนสร้าง เช่น เชียงใหม่หน้าหนาว");
-      inputRef.current?.focus();
-      return;
-    }
-
-    if (!canCreate) {
-      setError("คุณมีทริปครบ 5 ทริปแล้ว ต้องลบทริปเก่าก่อนสร้างใหม่");
-      return;
-    }
-
-    const trip: Trip = {
-      id: nextTripId(),
-      name: normalizedName,
-      createdAt: "วันนี้",
-      amountMinor: 0,
-      currency,
-      expenseCount: 0,
-      peopleCount: 1,
-      participants: [],
-      status: "draft",
-    };
-
-    addTrip(trip);
-    setNotice(`สร้าง “${normalizedName}” แล้ว`);
-    closeCreateTrip();
+    setError(TRIP_READ_ONLY_MESSAGE);
   }
 
   function handleBackdropMouseDown(event: MouseEvent<HTMLDivElement>) {
@@ -163,6 +142,7 @@ export function useDashboard() {
   }
 
   return {
+    readOnlyMessage: TRIP_READ_ONLY_MESSAGE,
     trips: visibleTrips,
     tripCount,
     maxTrips: MAX_TRIPS,

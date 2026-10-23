@@ -73,7 +73,7 @@ export function TripsSection({
       </button>
       {!canCreate && (
         <p className="mt-2 text-center text-[0.7rem] text-black/45 lg:text-xs">
-          คุณมีทริปครบ {maxTrips} ทริปแล้ว
+          ยังไม่เปิดการสร้างทริป
         </p>
       )}
     </section>

@@ -73,7 +73,7 @@ export function TripExpenseForm({
         <Button type="button" variant="ghost" onClick={onCancel} className="text-xs sm:text-sm">
           ยกเลิก
         </Button>
-        <Button type="submit" className="rounded-xl text-xs font-bold sm:text-sm">
+        <Button type="submit" disabled className="rounded-xl text-xs font-bold sm:text-sm">
           บันทึกรายการ
         </Button>
       </div>

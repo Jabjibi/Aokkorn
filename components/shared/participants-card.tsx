@@ -6,6 +6,7 @@ import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 
 export type ParticipantsCardForm = {
+  disabled?: boolean;
   open: boolean;
   name: string;
   error: string;
@@ -36,6 +37,7 @@ export function ParticipantsCard({
           {participants.map((participant) => (
             <li key={participant.id}>
               <RemovableChip
+                disabled={friendForm.disabled}
                 label={participant.name}
                 onRemove={participant.onRemove}
                 removeLabel={`นำ ${participant.name} ออกจากทริป`}
@@ -67,6 +69,7 @@ export function ParticipantsCard({
           </div>
           <Button
             type="submit"
+            disabled={friendForm.disabled}
             className="h-9 rounded-full bg-primary px-4 text-xs text-black hover:bg-[#b8ed37] sm:text-sm"
           >
             เพิ่ม
@@ -84,6 +87,7 @@ export function ParticipantsCard({
         <Button
           type="button"
           variant="outline"
+          disabled={friendForm.disabled}
           onClick={friendForm.onOpen}
           className="mt-4 h-9 rounded-full border-dashed border-black/15 px-4 text-xs text-black/55 shadow-none hover:border-black/30 hover:bg-[#f8f8f6] sm:text-sm"
         >

@@ -14,6 +14,14 @@ export function ReceivingAccountSection({
   account: ReceivingAccountView;
   embedded?: boolean;
 }) {
+  if (account.readOnly) {
+    return (
+      <section aria-label="บัญชีรับเงิน" className="rounded-2xl border border-black/10 p-4 sm:p-6">
+        <h3 className="text-sm font-bold sm:text-lg">บัญชีรับเงิน</h3>
+        <p className="mt-2 text-xs text-black/55 sm:text-sm">ยังไม่เปิดการบันทึกบัญชีรับเงิน</p>
+      </section>
+    );
+  }
   return (
     <>
       {account.formOpen ? (

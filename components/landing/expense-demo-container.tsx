@@ -5,5 +5,6 @@ import { ExpenseDemo } from "./expense-demo";
 
 export function ExpenseDemoContainer() {
   const demo = useExpenseDemo();
+
   return <ExpenseDemo demo={demo} />;
 }

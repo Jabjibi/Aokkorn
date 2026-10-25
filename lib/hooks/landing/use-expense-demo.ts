@@ -35,6 +35,7 @@ export function useExpenseDemo() {
 
     if (!parsed) {
       setError("ลองพิมพ์ชื่อรายการตามด้วยราคา เช่น กะเพรา 300");
+
       return;
     }
 

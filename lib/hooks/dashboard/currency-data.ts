@@ -185,5 +185,6 @@ export function getCurrencyDigits(currency: Currency) {
 
 export function getCurrencyLabel(currency: Currency) {
   const entry = currencyByCode.get(currency)!;
+
   return `${entry.name} (${currency})`;
 }

@@ -22,6 +22,7 @@ export function ReceivingAccountSection({
       </section>
     );
   }
+
   return (
     <>
       {account.formOpen ? (

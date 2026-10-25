@@ -20,7 +20,11 @@ export function ParticipantsCard({
   participants,
   friendForm,
 }: {
-  participants: { id: number; name: string; onRemove: () => void }[];
+  participants: {
+    id: number;
+    name: string;
+    onRemove: () => void;
+  }[];
   friendForm: ParticipantsCardForm;
 }) {
   return (

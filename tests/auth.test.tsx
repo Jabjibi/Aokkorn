@@ -7,6 +7,7 @@ import { SessionBoundary } from "@/components/auth/session-boundary";
 import { LineLoginEntry } from "@/components/auth/line-login-entry";
 
 const navigation = vi.hoisted(() => ({ replace: vi.fn(), refresh: vi.fn() }));
+
 vi.mock("next/navigation", () => ({ useRouter: () => navigation }));
 const session = {
   user: { id: "user-1", displayName: "ผู้ทดสอบ" },
@@ -31,6 +32,7 @@ afterEach(() => {
 describe("auth API boundary", () => {
   it("URL ใช้ public backend origin; ปฏิเสธ credentials/path/query ใน config", () => {
     expect(authUrl("line/start")).toBe("http://localhost:5016/api/v1/auth/line/start");
+
     for (const value of [
       "http://u:secret@localhost:5016",
       "http://localhost:5016/wrong",
@@ -49,6 +51,7 @@ describe("auth API boundary", () => {
         user: { ...session.user, lineSubject: "private" },
       }),
     ).toEqual(session);
+
     for (const value of [
       null,
       [],
@@ -56,12 +59,15 @@ describe("auth API boundary", () => {
       { ...session, expiresAt: "bad-date" },
       { ...session, csrfToken: "a".repeat(64) + "\n" },
       { ...session, user: { id: "", displayName: "" } },
-    ])
+    ]) {
       expect(parseSession(value)).toBeNull();
+    }
+
     expect(loginMessage("private-provider-message")).toBe("");
   });
   it("ส่ง cookie โดยไม่ cache และไม่เก็บ tokens ใน localStorage", async () => {
     const storage = vi.spyOn(Storage.prototype, "setItem");
+
     fetcher.mockResolvedValue(Response.json(session));
     expect(await readSession()).toEqual({ status: "authenticated", session });
     expect(fetcher).toHaveBeenCalledWith(
@@ -104,6 +110,7 @@ describe("auth API boundary", () => {
 
 function AccountFixture() {
   const account = useSessionAccount();
+
   return (
     <>
       <p>{account.session.user.displayName}</p>
@@ -112,6 +119,7 @@ function AccountFixture() {
     </>
   );
 }
+
 function protectedScreen() {
   return render(
     <SessionBoundary>
@@ -123,6 +131,7 @@ function protectedScreen() {
 describe("session UI gate", () => {
   it("ไม่ mount ข้อมูล dashboard ระหว่างรอ me", async () => {
     const pending = Promise.withResolvers<Response>();
+
     fetcher.mockReturnValue(pending.promise);
     protectedScreen();
     expect(screen.queryByText(session.user.displayName)).toBeNull();
@@ -170,6 +179,7 @@ describe("login ใน modal บนหน้าเดิม", () => {
     render(<LineLoginEntry />);
     fireEvent.click(screen.getByRole("button", { name: "เข้าสู่ระบบด้วย LINE" }));
     const dialog = screen.getByRole("dialog");
+
     expect(dialog).toBeTruthy();
     fireEvent.click(screen.getByRole("button", { name: "เข้าสู่ระบบด้วย LINE", hidden: false }));
     expect(await screen.findByRole("alert")).toHaveProperty(

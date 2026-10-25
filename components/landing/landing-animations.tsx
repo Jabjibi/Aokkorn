@@ -16,6 +16,7 @@ export function LandingAnimations({
   delay?: number;
 }) {
   const animation = useLandingMotion(kind, delay);
+
   return (
     <AnimatedSurface animation={animation} className={className}>
       {children}

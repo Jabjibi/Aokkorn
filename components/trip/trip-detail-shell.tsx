@@ -10,41 +10,34 @@ import {
   UserRoundPlus,
   X,
 } from "lucide-react";
-import { TripReadOnlyNotice } from "@/components/shared/trip-read-only-notice";
 import { SegmentedTabs } from "@/components/shared/segmented-tabs";
-import { TripCurrencyEditor } from "@/components/trip/trip-currency-editor";
-import { TripExpenseForm } from "@/components/trip/trip-expense-form";
 import { TripSplit } from "@/components/trip/trip-split";
 import { TripSummary } from "@/components/trip/trip-summary";
 import { Button } from "@/components/ui/button";
 import { useTripDetail } from "@/lib/hooks/trip/use-trip-detail";
 
 export function TripDetailShell({ tripId }: { tripId: string }) {
-  const {
-    ready,
-    canEdit,
-    readOnlyMessage,
-    detail,
-    summary,
-    activeTab,
-    tabs,
-    expenseForm,
-    currencyEditor,
-    friendForm,
-    onAddDay,
-    onShareTrip,
-    pendingClear,
-    onRequestClear,
-    onCancelClear,
-    onConfirmClear,
-    notice,
-  } = useTripDetail(tripId);
+  const { status, error, retry, detail, summary, activeTab, tabs } = useTripDetail(tripId);
 
-  if (!ready && !detail) {
-    return <div className="min-h-dvh bg-white" aria-busy="true" />;
+  if (status === "loading") {
+    return (
+      <main className="grid min-h-dvh place-items-center" aria-busy="true">
+        <p role="status">กำลังโหลดทริป…</p>
+      </main>
+    );
   }
 
-  if (!detail) {
+  if (status === "error") {
+    return (
+      <main className="flex min-h-dvh flex-col items-center justify-center gap-4 px-6">
+        <p role="alert">{error}</p>
+        <Button onClick={retry}>ลองอีกครั้ง</Button>
+        <Link href="/dashboard">กลับไปทริปของฉัน</Link>
+      </main>
+    );
+  }
+
+  if (!detail || !summary) {
     return (
       <main className="mx-auto flex min-h-dvh max-w-lg flex-col items-center justify-center px-6 text-center">
         <h1 className="text-sm font-black sm:text-2xl">ไม่พบทริปนี้</h1>
@@ -87,8 +80,7 @@ export function TripDetailShell({ tripId }: { tripId: string }) {
             <Button
               type="button"
               size="sm"
-              disabled={!canEdit}
-              onClick={onShareTrip}
+              disabled
               className="h-7 gap-1 rounded-full bg-primary px-2 text-[11px] font-bold text-primary-foreground hover:bg-[#b8ed37] sm:h-8 sm:px-3 sm:text-sm"
             >
               <UserRoundPlus className="size-3.5" /> แชร์เพื่อน
@@ -114,8 +106,7 @@ export function TripDetailShell({ tripId }: { tripId: string }) {
               type="button"
               variant="ghost"
               size="sm"
-              onClick={onRequestClear}
-              disabled={!canEdit || detail.expenseCount === 0}
+              disabled
               aria-label="ล้างรายการค่าใช้จ่ายทั้งหมด"
               className="h-8 shrink-0 px-1 text-[11px] font-semibold text-black/45 hover:bg-black/[0.025] hover:text-black disabled:opacity-40 sm:text-sm"
             >
@@ -128,38 +119,20 @@ export function TripDetailShell({ tripId }: { tripId: string }) {
       <main
         className={`mx-auto w-full max-w-5xl flex-1 px-6 ${activeTab === "summary" ? "pb-8" : "pb-36"}`}
       >
-        <TripReadOnlyNotice message={readOnlyMessage} />
-        {activeTab === "items" && pendingClear && (
-          <div
-            role="group"
-            aria-label="ยืนยันการล้างรายการ"
-            className="mt-4 flex flex-wrap items-center gap-2 rounded-xl bg-[#f7f7f5] px-3 py-2 text-xs sm:text-sm"
-          >
-            <span className="mr-auto font-semibold">ล้างรายการทั้งหมดในทริปนี้?</span>
-            <Button
-              type="button"
-              variant="ghost"
-              size="sm"
-              onClick={onCancelClear}
-              className="text-xs sm:text-sm"
-            >
-              ยกเลิก
-            </Button>
-            <Button
-              type="button"
-              variant="destructive"
-              size="sm"
-              disabled={!canEdit}
-              onClick={onConfirmClear}
-              className="text-xs sm:text-sm"
-            >
-              ล้างทั้งหมด
-            </Button>
-          </div>
-        )}
+        <p role="note" className="my-4 text-xs text-black/50">
+          ข้อมูลจากบัญชีของคุณ · ส่วนแก้ไขภายในทริปยังไม่เปิดใช้งาน
+        </p>
         {activeTab === "items" && (
           <>
-            <TripCurrencyEditor currencyLabel={detail.currencyLabel} editor={currencyEditor} />
+            <section
+              aria-label="สกุลเงินหลักของทริป"
+              className="mt-5 flex items-center justify-between border-y border-black/10 bg-[#f5f6f7] px-4 py-3 text-sm"
+            >
+              <span>{detail.currencyLabel}</span>
+              <Button variant="outline" size="sm" disabled>
+                เปลี่ยนสกุลเงิน
+              </Button>
+            </section>
 
             <div className="flex min-h-11 items-center justify-between border-b border-[#f0f0ed] px-4 py-3 text-xs font-bold text-black/45 sm:text-sm">
               <span>รายการ</span>
@@ -194,38 +167,13 @@ export function TripDetailShell({ tripId }: { tripId: string }) {
                             type="button"
                             variant="ghost"
                             size="icon-sm"
-                            disabled={!canEdit}
-                            onClick={expense.onRemove}
+                            disabled
                             aria-label={`ลบรายการ ${expense.name}`}
                             className="text-black/35 hover:bg-red-50 hover:text-red-600"
                           >
                             <X className="size-4" />
                           </Button>
                         </span>
-                        {expense.pendingDelete && (
-                          <div className="col-span-full flex flex-wrap items-center justify-end gap-2 border-t border-[#f0f0ed] bg-red-50 px-4 py-2 text-xs sm:text-sm">
-                            <span className="mr-auto font-semibold text-red-700">ลบรายการนี้?</span>
-                            <Button
-                              type="button"
-                              variant="ghost"
-                              size="sm"
-                              onClick={expense.onCancelRemove}
-                              className="text-xs sm:text-sm"
-                            >
-                              ยกเลิก
-                            </Button>
-                            <Button
-                              type="button"
-                              variant="destructive"
-                              size="sm"
-                              disabled={!canEdit}
-                              onClick={expense.onConfirmRemove}
-                              className="text-xs sm:text-sm"
-                            >
-                              ลบรายการ
-                            </Button>
-                          </div>
-                        )}
                       </li>
                     ))}
                   </ul>
@@ -241,32 +189,21 @@ export function TripDetailShell({ tripId }: { tripId: string }) {
                   </div>
                 )}
 
-                {day.formOpen ? (
-                  <TripExpenseForm
-                    dayId={day.id}
-                    dayName={day.name}
-                    currency={detail.currency}
-                    {...expenseForm}
-                  />
-                ) : (
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    disabled={!canEdit}
-                    onClick={day.onAddExpense}
-                    className="flex min-h-16 w-full justify-start rounded-none border-b border-[#f0f0ed] px-4 text-xs font-semibold text-black/55 hover:bg-black/[0.025] hover:text-black sm:text-base"
-                  >
-                    <CirclePlus className="size-5" /> เพิ่มรายการ
-                  </Button>
-                )}
+                <Button
+                  type="button"
+                  variant="ghost"
+                  disabled
+                  className="flex min-h-16 w-full justify-start rounded-none border-b border-[#f0f0ed] px-4 text-xs font-semibold text-black/55 sm:text-base"
+                >
+                  <CirclePlus className="size-5" /> เพิ่มรายการ
+                </Button>
               </section>
             ))}
 
             <Button
               type="button"
               variant="ghost"
-              disabled={!canEdit}
-              onClick={onAddDay}
+              disabled
               className="flex min-h-16 w-full rounded-none text-sm font-bold text-black hover:bg-primary/15 sm:text-base"
             >
               <CalendarPlus2 className="size-5" /> เพิ่มวัน
@@ -275,9 +212,7 @@ export function TripDetailShell({ tripId }: { tripId: string }) {
         )}
 
         {activeTab === "summary" && <TripSummary summary={summary} />}
-        {activeTab === "split" && (
-          <TripSplit detail={detail} friendForm={friendForm} summary={summary} />
-        )}
+        {activeTab === "split" && <TripSplit detail={detail} />}
       </main>
 
       {activeTab !== "summary" && (
@@ -296,9 +231,6 @@ export function TripDetailShell({ tripId }: { tripId: string }) {
           </div>
         </footer>
       )}
-      <span className="sr-only" role="status" aria-live="polite">
-        {notice}
-      </span>
     </div>
   );
 }

@@ -1,6 +1,4 @@
-import type { Trip } from "@/lib/hooks/dashboard/dashboard-data";
-
-export const trip: Trip = {
+export const trip = {
   id: 1,
   name: "ทริปของฉัน",
   createdAt: "วันนี้",
@@ -11,6 +9,7 @@ export const trip: Trip = {
   participants: [{ id: 1, name: "เพื่อน" }],
   status: "active",
 };
+
 export const ledger = {
   dayCount: 1,
   expenses: [{ id: 1, tripId: 1, day: 1, name: "อาหาร", amountMinor: 12000, currency: "THB" }],

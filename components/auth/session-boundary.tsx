@@ -9,6 +9,7 @@ import { SessionAccountContext, useSessionBoundary } from "@/lib/hooks/auth/use-
 /** UI gate ก่อน mount children; API ฝั่ง backend ยังต้องใช้ SessionGuard ของตัวเอง */
 export function SessionBoundary({ children }: { children: ReactNode }) {
   const auth = useSessionBoundary();
+
   if (auth.result.status === "unavailable") {
     return (
       <main className="flex min-h-dvh flex-col items-center justify-center gap-5 px-6 text-center">
@@ -21,6 +22,7 @@ export function SessionBoundary({ children }: { children: ReactNode }) {
       </main>
     );
   }
+
   if (auth.result.status !== "authenticated") {
     return (
       <main className="grid min-h-dvh place-items-center" aria-busy="true">
@@ -28,6 +30,7 @@ export function SessionBoundary({ children }: { children: ReactNode }) {
       </main>
     );
   }
+
   return (
     <SessionAccountContext
       value={{

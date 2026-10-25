@@ -6,9 +6,9 @@ import { Modal } from "@/components/shared/modal";
 import { Button } from "@/components/ui/button";
 import { useLineLogin } from "@/lib/hooks/auth/use-line-login";
 
-/** UI เท่านั้น: ปุ่มใน header + modal เดิม; state และ navigation อยู่ใน hook */
 export function LineLoginEntry({ initialMessage = "" }: { initialMessage?: string }) {
   const login = useLineLogin(initialMessage);
+
   return (
     <Dialog.Root open={login.open} onOpenChange={login.changeOpen}>
       <Dialog.Trigger asChild>

@@ -10,7 +10,9 @@ export function ReceivingAccountCard({
   account: ReceivingAccountView;
   embedded?: boolean;
 }) {
-  if (!account.saved) return null;
+  if (!account.saved) {
+    return null;
+  }
 
   return (
     <Card

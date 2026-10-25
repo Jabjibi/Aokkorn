@@ -7,5 +7,6 @@ export default async function Home({
   searchParams: Promise<{ login?: string }>;
 }) {
   const { login } = await searchParams;
+
   return <LandingPage loginMessage={loginMessage(login)} />;
 }

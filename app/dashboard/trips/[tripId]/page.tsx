@@ -8,5 +8,6 @@ export const metadata: Metadata = {
 
 export default async function TripDetailPage({ params }: { params: Promise<{ tripId: string }> }) {
   const { tripId } = await params;
-  return <TripDetailShell tripId={tripId} />;
+
+  return <TripDetailShell key={tripId} tripId={tripId} />;
 }

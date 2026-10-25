@@ -1,6 +1,6 @@
 "use client";
 
-import { TripReadOnlyNotice } from "@/components/shared/trip-read-only-notice";
+import { Button } from "@/components/ui/button";
 import { CreateTripDialog } from "@/components/dashboard/create-trip-dialog";
 import { DashboardHeader } from "@/components/dashboard/dashboard-header";
 import { GettingStartedCard } from "@/components/dashboard/getting-started-card";
@@ -30,7 +30,17 @@ export function DashboardShell() {
       )}
 
       <main className="mx-auto w-full max-w-7xl px-4 pt-4 pb-32 sm:px-6 sm:pt-6 lg:px-8 lg:pt-9 lg:pb-14">
-        <TripReadOnlyNotice message={dashboard.readOnlyMessage} />
+        {dashboard.status === "loading" && (
+          <p role="status" className="mb-5">
+            กำลังโหลดทริป…
+          </p>
+        )}
+        {(dashboard.loadError || dashboard.uncertain) && (
+          <div className="mb-5 space-y-3">
+            <p role="alert">{dashboard.loadError || dashboard.createDisabledMessage}</p>
+            <Button onClick={dashboard.retry}>โหลดรายการใหม่</Button>
+          </div>
+        )}
         <WelcomeCard totalLabel={dashboard.totalLabel} />
         <GettingStartedCard
           onCreateTrip={dashboard.openCreateTrip}
@@ -44,6 +54,8 @@ export function DashboardShell() {
           onToggleSort={dashboard.toggleSort}
           onCreateTrip={dashboard.openCreateTrip}
           canCreate={dashboard.canCreate}
+          disabledMessage={dashboard.createDisabledMessage}
+          empty={dashboard.status === "ready" && dashboard.tripCount === 0}
           createButtonRef={dashboard.createButtonRef}
         />
       </main>
@@ -54,6 +66,8 @@ export function DashboardShell() {
         <CreateTripDialog
           name={dashboard.name}
           currency={dashboard.currency}
+          saving={dashboard.saving}
+          canSubmit={dashboard.canSubmit}
           currencyOptions={dashboard.currencyOptions}
           error={dashboard.error}
           tripCount={dashboard.tripCount}
@@ -70,10 +84,6 @@ export function DashboardShell() {
           onBackdropMouseDown={dashboard.handleBackdropMouseDown}
         />
       )}
-
-      <span className="sr-only" role="status" aria-live="polite">
-        {dashboard.notice}
-      </span>
     </div>
   );
 }

@@ -2,7 +2,10 @@ export function ProfileChip({
   profile,
   compact = false,
 }: {
-  profile: { name: string; initial: string };
+  profile: {
+    name: string;
+    initial: string;
+  };
   compact?: boolean;
 }) {
   return (

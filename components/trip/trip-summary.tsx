@@ -1,5 +1,4 @@
 import { Share2, Wallet } from "lucide-react";
-import { ReceivingAccountSection } from "@/components/shared/receiving-account-section";
 import { PercentageBar } from "@/components/shared/percentage-bar";
 import { Button } from "@/components/ui/button";
 import type { TripSummaryModel } from "@/lib/hooks/trip/use-trip-summary";
@@ -83,7 +82,7 @@ export function TripSummary({ summary }: { summary: TripSummaryModel }) {
         )}
       </section>
 
-      <ReceivingAccountSection account={summary.account} />
+      <p className="text-xs text-black/50">ยังไม่เปิดการบันทึกบัญชีรับเงิน</p>
 
       <Button
         type="button"

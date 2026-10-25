@@ -5,6 +5,7 @@ export function formatAmount(amountMinor: number, currency: Currency) {
   const digits = getCurrencyDigits(currency);
   const scale = 10 ** digits;
   const fractionDigits = amountMinor % scale !== 0 ? digits : 0;
+
   return new Intl.NumberFormat("th-TH", {
     style: "currency",
     currency,
@@ -17,6 +18,7 @@ export function formatNumber(amountMinor: number, currency: Currency) {
   const digits = getCurrencyDigits(currency);
   const scale = 10 ** digits;
   const fractionDigits = amountMinor % scale !== 0 ? digits : 0;
+
   return new Intl.NumberFormat("th-TH", {
     minimumFractionDigits: fractionDigits,
     maximumFractionDigits: fractionDigits,
@@ -36,6 +38,7 @@ export function formatAverage(amountMinor: number, currency: Currency) {
 
 export function formatShare(amountMinor: number, currency: Currency) {
   const digits = getCurrencyDigits(currency);
+
   return new Intl.NumberFormat("th-TH", {
     style: "currency",
     currency,

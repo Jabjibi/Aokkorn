@@ -1,7 +1,10 @@
 import { ChevronDown } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-type Option = { value: string; label: string };
+type Option = {
+  value: string;
+  label: string;
+};
 
 export function FormSelect({
   className,

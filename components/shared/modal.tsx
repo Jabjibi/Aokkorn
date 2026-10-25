@@ -5,7 +5,11 @@ import { Dialog } from "radix-ui";
 import { X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
-type ModalProps = { title: string; description: string; children: ReactNode };
+type ModalProps = {
+  title: string;
+  description: string;
+  children: ReactNode;
+};
 
 export function Modal({ title, description, children }: ModalProps) {
   return (

@@ -9,7 +9,10 @@ type CurrencyEditor = {
   open: boolean;
   current: Currency;
   selected: Currency;
-  options: readonly { value: Currency; label: string }[];
+  options: readonly {
+    value: Currency;
+    label: string;
+  }[];
   canEdit: boolean;
   canSave: boolean;
   previewLabel: string | null;

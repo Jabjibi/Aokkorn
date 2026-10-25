@@ -1,4 +1,8 @@
-export type DemoExpense = { id: number; name: string; cents: number };
+export type DemoExpense = {
+  id: number;
+  name: string;
+  cents: number;
+};
 
 export const landingDemo: {
   tripName: string;

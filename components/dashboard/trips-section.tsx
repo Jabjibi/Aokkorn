@@ -11,6 +11,8 @@ type TripsSectionProps = {
   onToggleSort: () => void;
   onCreateTrip: () => void;
   canCreate: boolean;
+  disabledMessage: string;
+  empty: boolean;
   createButtonRef: RefObject<HTMLButtonElement | null>;
 };
 
@@ -22,6 +24,8 @@ export function TripsSection({
   onToggleSort,
   onCreateTrip,
   canCreate,
+  disabledMessage,
+  empty,
   createButtonRef,
 }: TripsSectionProps) {
   return (
@@ -45,6 +49,7 @@ export function TripsSection({
         </button>
       </div>
 
+      {empty && <p className="mt-5 text-sm text-black/50">ยังไม่มีทริป เริ่มสร้างทริปแรกได้เลย</p>}
       <div className="mt-5 grid gap-4 lg:grid-cols-2">
         {trips.map((trip) => (
           <TripCard trip={trip} key={trip.id} />
@@ -71,10 +76,8 @@ export function TripsSection({
           {tripCount}/{maxTrips}
         </span>
       </button>
-      {!canCreate && (
-        <p className="mt-2 text-center text-[0.7rem] text-black/45 lg:text-xs">
-          ยังไม่เปิดการสร้างทริป
-        </p>
+      {disabledMessage && (
+        <p className="mt-2 text-center text-[0.7rem] text-black/45 lg:text-xs">{disabledMessage}</p>
       )}
     </section>
   );

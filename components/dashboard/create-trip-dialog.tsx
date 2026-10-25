@@ -1,6 +1,5 @@
 import type { ChangeEventHandler, FormEvent, MouseEvent, RefObject } from "react";
 import { MapPin, Plus } from "lucide-react";
-import type { Currency } from "@/lib/hooks/dashboard/dashboard-data";
 import { AppDialog } from "@/components/shared/app-dialog";
 import { FormSelect } from "@/components/shared/form-select";
 import { Button } from "@/components/ui/button";
@@ -8,8 +7,13 @@ import { Input } from "@/components/ui/input";
 
 type CreateTripDialogProps = {
   name: string;
-  currency: Currency;
-  currencyOptions: readonly { value: Currency; label: string }[];
+  currency: string;
+  saving: boolean;
+  canSubmit: boolean;
+  currencyOptions: readonly {
+    value: string;
+    label: string;
+  }[];
   error: string;
   tripCount: number;
   maxTrips: number;
@@ -28,6 +32,8 @@ type CreateTripDialogProps = {
 export function CreateTripDialog({
   name,
   currency,
+  saving,
+  canSubmit,
   currencyOptions,
   error,
   tripCount,
@@ -54,7 +60,7 @@ export function CreateTripDialog({
       onClose={onClose}
       onBackdropMouseDown={onBackdropMouseDown}
     >
-      <form className="mt-6" onSubmit={onSubmit}>
+      <form className="mt-6" onSubmit={onSubmit} aria-busy={saving}>
         <label className="text-xs font-bold lg:text-sm" htmlFor="trip-name">
           ชื่อทริปหรือบิล
         </label>
@@ -64,7 +70,8 @@ export function CreateTripDialog({
           value={name}
           onChange={onNameChange}
           placeholder="เช่น เชียงใหม่หน้าหนาว"
-          maxLength={80}
+          disabled={saving}
+          maxLength={160}
           aria-invalid={Boolean(error)}
           aria-describedby={error ? errorId : undefined}
           className="mt-2 h-12 rounded-xl border-black/12 bg-[#f8f8f5] px-4 text-xs shadow-none focus-visible:border-black focus-visible:ring-[#cfff47]/45 lg:text-sm"
@@ -79,6 +86,7 @@ export function CreateTripDialog({
           value={currency}
           onChange={onCurrencyChange}
           options={currencyOptions}
+          disabled={saving}
         />
 
         {error && (
@@ -101,15 +109,16 @@ export function CreateTripDialog({
               variant="ghost"
               className="h-11 rounded-xl px-4 text-xs hover:bg-black/5 lg:text-sm"
               onClick={onClose}
+              disabled={saving}
             >
               ยกเลิก
             </Button>
             <Button
               type="submit"
-              disabled
+              disabled={!canSubmit || saving}
               className="h-11 rounded-xl bg-black px-5 text-xs font-bold text-white hover:bg-black/80 lg:text-sm"
             >
-              <Plus /> สร้างทริป
+              <Plus /> {saving ? "กำลังบันทึก…" : "สร้างทริป"}
             </Button>
           </div>
         </div>

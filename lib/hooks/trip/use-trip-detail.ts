@@ -1,277 +1,100 @@
 "use client";
 
-import { useState, type ChangeEvent, type FormEvent } from "react";
-import { currencyOptions, type Currency } from "@/lib/hooks/dashboard/dashboard-data";
-import { getCurrencyLabel } from "@/lib/hooks/dashboard/currency-data";
-import {
-  formatAmount,
-  formatAverage,
-  formatNumber,
-  formatShare,
-} from "@/lib/hooks/dashboard/format-amount";
-import { getTripParticipants, useTrips } from "@/lib/hooks/dashboard/use-trips";
-import {
-  convertLedgerCurrency,
-  getConvertedAmountMinor,
-  getRequiredRates,
-  getSourceCurrency,
-  parseExchangeRate,
-} from "@/lib/hooks/trip/currency-conversion";
-import { useTripLedger } from "@/lib/hooks/trip/use-trip-ledger";
-import { useTripSummary } from "@/lib/hooks/trip/use-trip-summary";
-import { TRIP_READ_ONLY_MESSAGE } from "@/lib/hooks/trip/trip-availability";
+import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
+import { ApiRequestError, apiErrorMessage } from "@/lib/hooks/api-client";
+import { readCurrencies, readTripSummary } from "./trip-api";
+import { tripDetailView } from "./trip-view";
+import { useTripSummary } from "./use-trip-summary";
+import { assertCurrencyMetadata } from "./trip-contract";
+import type { CurrencyInfo, TripSummary } from "./trip-contract";
 
 export type TripTab = "items" | "summary" | "split";
 
+type DetailState =
+  | { status: "loading" }
+  | {
+      status: "error";
+      message: string;
+    }
+  | { status: "not-found" }
+  | {
+      status: "ready";
+      tripId: string;
+      snapshot: TripSummary;
+      currencies: CurrencyInfo[];
+    };
+
 export function useTripDetail(tripId: string) {
-  const numericTripId = Number(tripId);
-  const { trips, ready: tripsReady } = useTrips();
-  const { ledger, ready: ledgerReady } = useTripLedger(numericTripId);
+  const router = useRouter();
+  const [state, setState] = useState<DetailState>({ status: "loading" });
+  const [attempt, setAttempt] = useState(0);
   const [activeTab, setActiveTab] = useState<TripTab>("items");
-  const [formDay, setFormDay] = useState<number | null>(null);
-  const [expenseName, setExpenseName] = useState("");
-  const [expenseAmount, setExpenseAmount] = useState("");
-  const [formError, setFormError] = useState("");
-  const [pendingDeleteId, setPendingDeleteId] = useState<number | null>(null);
-  const [pendingClear, setPendingClear] = useState(false);
-  const [notice, setNotice] = useState("");
-  const [currencyEditorOpen, setCurrencyEditorOpen] = useState(false);
-  const [selectedCurrency, setSelectedCurrency] = useState<Currency | null>(null);
-  const [currencyError, setCurrencyError] = useState("");
-  const [currencyRates, setCurrencyRates] = useState<Partial<Record<Currency, string>>>({});
-  const [friendFormOpen, setFriendFormOpen] = useState(false);
-  const [friendName, setFriendName] = useState("");
-  const [friendError, setFriendError] = useState("");
 
-  const trip = trips.find((candidate) => candidate.id === numericTripId);
-  const participants = getTripParticipants(trip);
-  const selectedBase = selectedCurrency ?? trip?.currency ?? "THB";
-  const requiredRates =
-    trip && selectedBase !== trip.currency
-      ? getRequiredRates(ledger, trip.currency, selectedBase)
-      : [];
-  const ratesValid = requiredRates.every((source) =>
-    parseExchangeRate(currencyRates[source] ?? ""),
-  );
-  const previewLedger =
-    trip && selectedBase !== trip.currency && ratesValid
-      ? convertLedgerCurrency(ledger, trip.currency, selectedBase, currencyRates, "")
-      : null;
-  const previewTotalMinor = previewLedger?.expenses.reduce(
-    (sum, expense) => sum + getConvertedAmountMinor(expense),
-    0,
-  );
+  useEffect(() => {
+    const controller = new AbortController();
 
-  function blockWrite() {
-    setNotice(TRIP_READ_ONLY_MESSAGE);
-  }
+    void Promise.all([
+      readTripSummary(tripId, controller.signal),
+      readCurrencies(controller.signal),
+    ])
+      .then(([snapshot, currencies]) => {
+        assertCurrencyMetadata(currencies, [
+          snapshot.trip.total,
+          ...snapshot.trip.days.map((day) => day.total),
+          ...snapshot.expenses.flatMap((expense) => [expense.amount, expense.converted]),
+          ...snapshot.obligations.map((entry) => entry.amount),
+          ...snapshot.obligationTotals.paid,
+          ...snapshot.obligationTotals.unpaid,
+        ]);
 
-  function openCurrencyEditor() {
-    blockWrite();
-  }
+        if (!controller.signal.aborted) {
+          setState({ status: "ready", tripId, snapshot, currencies });
+        }
+      })
+      .catch((error: unknown) => {
+        if (controller.signal.aborted) {
+          return;
+        }
 
-  function closeCurrencyEditor() {
-    setCurrencyEditorOpen(false);
-    setCurrencyError("");
-  }
+        if (error instanceof ApiRequestError && error.status === 404) {
+          setState({ status: "not-found" });
+        } else {
+          setState({ status: "error", message: apiErrorMessage(error) });
 
-  function saveCurrency(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    setCurrencyError(TRIP_READ_ONLY_MESSAGE);
-  }
+          if (error instanceof ApiRequestError && error.status === 401) {
+            router.replace("/?login=required");
+          }
+        }
+      });
 
-  function openExpenseForm() {
-    blockWrite();
-  }
+    return () => controller.abort();
+  }, [tripId, router, attempt]);
 
-  function closeExpenseForm() {
-    setFormDay(null);
-    setFormError("");
-  }
+  const loaded = state.status === "ready" && state.tripId === tripId ? state : null;
+  const detail = loaded ? tripDetailView(loaded.snapshot, loaded.currencies) : null;
+  const summary = useTripSummary(loaded?.snapshot ?? null, loaded?.currencies ?? []);
 
-  function handleNameChange(event: ChangeEvent<HTMLInputElement>) {
-    setExpenseName(event.target.value);
-    setFormError("");
+  function retry() {
+    setState({ status: "loading" });
+    setAttempt((value) => value + 1);
   }
-
-  function handleAmountChange(event: ChangeEvent<HTMLInputElement>) {
-    setExpenseAmount(event.target.value);
-    setFormError("");
-  }
-
-  function handleAddExpense(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    setFormError(TRIP_READ_ONLY_MESSAGE);
-  }
-
-  function confirmRemoveExpense() {
-    blockWrite();
-  }
-  function handleAddDay() {
-    blockWrite();
-  }
-  function requestClearExpenses() {
-    blockWrite();
-  }
-
-  function selectTab(tab: TripTab) {
-    setPendingClear(false);
-    setActiveTab(tab);
-  }
-
-  function openFriendForm() {
-    blockWrite();
-  }
-
-  function closeFriendForm() {
-    setFriendFormOpen(false);
-    setFriendError("");
-  }
-
-  function handleFriendNameChange(event: ChangeEvent<HTMLInputElement>) {
-    setFriendName(event.target.value);
-    setFriendError("");
-  }
-
-  function handleAddFriend(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    setFriendError(TRIP_READ_ONLY_MESSAGE);
-  }
-
-  function handleRemoveFriend() {
-    blockWrite();
-  }
-  function confirmClearExpenses() {
-    blockWrite();
-  }
-  function handleShareTrip() {
-    blockWrite();
-  }
-
-  const expenses = ledger.expenses;
-  const totalMinor = expenses.reduce((sum, expense) => sum + getConvertedAmountMinor(expense), 0);
-  const averageMinor = expenses.length ? totalMinor / expenses.length : 0;
-  const peopleCount = participants.length + 1;
-  const summary = useTripSummary({
-    tripName: trip?.name ?? "",
-    currency: trip?.currency ?? "THB",
-    expenses,
-  });
-
-  const detail = trip
-    ? {
-        name: trip.name,
-        createdAt: trip.createdAt,
-        currency: trip.currency,
-        currencyLabel: getCurrencyLabel(trip.currency),
-        expenseCount: expenses.length,
-        peopleCount,
-        totalLabel: formatAmount(totalMinor, trip.currency),
-        averageLabel: formatAverage(averageMinor, trip.currency),
-        perPersonLabel: formatShare(totalMinor / peopleCount, trip.currency),
-        splitSharePercent: peopleCount > 1 ? 100 / peopleCount : 0,
-        participants: participants.map((participant) => ({
-          ...participant,
-          onRemove: handleRemoveFriend,
-        })),
-        days: Array.from({ length: ledger.dayCount }, (_, index) => {
-          const dayNumber = index + 1;
-          const dayExpenses = expenses.filter((expense) => expense.day === dayNumber);
-          return {
-            id: dayNumber,
-            name: `วัน ${dayNumber}`,
-            totalLabel: formatAmount(
-              dayExpenses.reduce((sum, expense) => sum + getConvertedAmountMinor(expense), 0),
-              trip.currency,
-            ),
-            onAddExpense: openExpenseForm,
-            formOpen: formDay === dayNumber,
-            expenses: dayExpenses.map((expense) => ({
-              id: expense.id,
-              name: expense.name,
-              amountLabel:
-                getSourceCurrency(expense, trip.currency) === trip.currency
-                  ? formatNumber(expense.amountMinor, trip.currency)
-                  : formatAmount(expense.amountMinor, getSourceCurrency(expense, trip.currency)),
-              convertedLabel:
-                getSourceCurrency(expense, trip.currency) === trip.currency
-                  ? null
-                  : `≈ ${formatAmount(getConvertedAmountMinor(expense), trip.currency)}`,
-              pendingDelete: pendingDeleteId === expense.id,
-              onRemove: blockWrite,
-              onConfirmRemove: confirmRemoveExpense,
-              onCancelRemove: () => setPendingDeleteId(null),
-            })),
-          };
-        }),
-      }
-    : null;
 
   return {
-    canEdit: false,
-    readOnlyMessage: TRIP_READ_ONLY_MESSAGE,
-    ready: tripsReady && ledgerReady,
+    status: state.status === "ready" && !loaded ? "loading" : state.status,
+    error: state.status === "error" ? state.message : "",
+    retry,
     detail,
     summary,
     activeTab,
     tabs: [
-      { id: "items", label: "รายการ", onSelect: () => selectTab("items") },
-      { id: "summary", label: "สรุป", onSelect: () => selectTab("summary") },
-      { id: "split", label: "หาร", onSelect: () => selectTab("split") },
-    ] satisfies { id: TripTab; label: string; onSelect: () => void }[],
-    expenseForm: {
-      name: expenseName,
-      amount: expenseAmount,
-      error: formError,
-      onNameChange: handleNameChange,
-      onAmountChange: handleAmountChange,
-      onSubmit: handleAddExpense,
-      onCancel: closeExpenseForm,
-    },
-    currencyEditor: {
-      open: currencyEditorOpen,
-      current: trip?.currency ?? "THB",
-      selected: selectedBase,
-      options: currencyOptions,
-      rateFields: requiredRates.map((source) => ({
-        source,
-        target: selectedBase,
-        value: currencyRates[source] ?? "",
-        onChange: (event: ChangeEvent<HTMLInputElement>) => {
-          setCurrencyRates((current) => ({ ...current, [source]: event.target.value }));
-          setCurrencyError("");
-        },
-      })),
-      previewLabel:
-        previewTotalMinor === undefined ? null : formatAmount(previewTotalMinor, selectedBase),
-      canEdit: false,
-      canSave: false,
-      error: currencyError,
-      onClose: closeCurrencyEditor,
-      onToggle: currencyEditorOpen ? closeCurrencyEditor : openCurrencyEditor,
-      onSelect: (event: ChangeEvent<HTMLSelectElement>) => {
-        setSelectedCurrency(event.target.value as Currency);
-        setCurrencyRates({});
-        setCurrencyError("");
-      },
-      onSubmit: saveCurrency,
-    },
-    friendForm: {
-      disabled: true,
-      open: friendFormOpen,
-      name: friendName,
-      error: friendError,
-      onOpen: openFriendForm,
-      onClose: closeFriendForm,
-      onNameChange: handleFriendNameChange,
-      onSubmit: handleAddFriend,
-    },
-    onAddDay: handleAddDay,
-    onShareTrip: handleShareTrip,
-    pendingClear,
-    onRequestClear: requestClearExpenses,
-    onCancelClear: () => setPendingClear(false),
-    onConfirmClear: confirmClearExpenses,
-    notice,
+      { id: "items", label: "รายการ", onSelect: () => setActiveTab("items") },
+      { id: "summary", label: "สรุป", onSelect: () => setActiveTab("summary") },
+      { id: "split", label: "หาร", onSelect: () => setActiveTab("split") },
+    ] satisfies {
+      id: TripTab;
+      label: string;
+      onSelect: () => void;
+    }[],
   };
 }
